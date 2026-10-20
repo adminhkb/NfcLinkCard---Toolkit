@@ -103,53 +103,143 @@ CardSave flipperNfcToCardSave(String data) {
       atqa: Uint8List.fromList(atqa));
 }
 
-CardSave mctToCardSave(String data) {
-  final String id = const Uuid().v4();
-  final List<String> blocks = data
-      .split(RegExp(r'\r?\n'))
-      .map((line) => line.trim())
-      .where((line) => line.isNotEmpty && !line.startsWith('+Sector:'))
-      .toList();
-  if (blocks.isEmpty ||
-      !RegExp(r'^[0-9A-Fa-f]{32}$').hasMatch(blocks.first)) {
+final _mctSectorHeader = RegExp(r'^\+Sector:\s*(\d+)\s*$');
+final _mctBlockLine = RegExp(r'^[0-9A-Fa-f-]{32}$');
+const _mctNoDataBlock = '--------------------------------';
+
+/// True when [data] looks like a MIFARE Classic Tool text dump.
+bool isMctDump(String data) =>
+    RegExp(r'^\s*\+Sector:\s*\d+\s*$', multiLine: true).hasMatch(data);
+
+/// A MIFARE Classic Tool dump converted to a [CardSave], with what could not
+/// be carried over exactly.
+class MctImportResult {
+  final CardSave card;
+
+  /// Sectors present in the file, in file order.
+  final List<int> sectors;
+
+  /// Blocks stored as unread: missing sectors, `*` sectors and `----` lines.
+  final int unreadBlocks;
+
+  /// Blocks where MCT marked only some bytes as unknown (usually a key in a
+  /// sector trailer). The unknown nibbles are stored as 0.
+  final int partialBlocks;
+
+  const MctImportResult({
+    required this.card,
+    required this.sectors,
+    required this.unreadBlocks,
+    required this.partialBlocks,
+  });
+}
+
+/// Parses an MCT dump. Blocks are placed by their `+Sector:` header, so
+/// sectors MCT skipped stay unread instead of shifting later blocks.
+MctImportResult parseMctDump(String data) {
+  final blocksBySector = <int, List<String>>{};
+  int? sector;
+
+  for (final rawLine in data.split(RegExp(r'\r?\n'))) {
+    final line = rawLine.trim();
+    if (line.isEmpty) continue;
+
+    final header = _mctSectorHeader.firstMatch(line);
+    if (header != null) {
+      sector = int.parse(header.group(1)!);
+      if (sector > 39) {
+        throw FormatException('MCT sector $sector is out of range');
+      }
+      if (blocksBySector.containsKey(sector)) {
+        throw FormatException('MCT sector $sector appears twice');
+      }
+      blocksBySector[sector] = [];
+      continue;
+    }
+    if (sector == null) {
+      throw const FormatException('MCT data found before the first sector');
+    }
+    if (line.startsWith('*')) {
+      // MCT writes "*No keys found or dead sector*" for unread sectors;
+      // their blocks stay unread.
+      continue;
+    }
+    if (!_mctBlockLine.hasMatch(line)) {
+      throw FormatException('Invalid MCT block in sector $sector');
+    }
+    final blocks = blocksBySector[sector]!;
+    if (blocks.length >= mfClassicGetBlockCountBySector(sector)) {
+      throw FormatException('Too many blocks in MCT sector $sector');
+    }
+    blocks.add(line);
+  }
+
+  if (blocksBySector.isEmpty) {
+    throw const FormatException('MCT dump has no sector');
+  }
+  final manufacturer = blocksBySector[0];
+  if (manufacturer == null ||
+      manufacturer.isEmpty ||
+      !RegExp(r'^[0-9A-Fa-f]{32}$').hasMatch(manufacturer.first)) {
     throw const FormatException('MCT dump has no readable manufacturer block');
   }
-  final String uid = blocks.first.substring(0, 8);
-  final int sak = hexToBytes(blocks.first.substring(10, 12))[0];
-  String atqaString = blocks.first.substring(12, 16);
-  final List<int> atqa = [
-    int.parse(atqaString.substring(2), radix: 16),
-    int.parse(atqaString.substring(0, 2), radix: 16)
-  ];
-  final List<int> ats = [];
-  final String name = uid;
-  const Color color = Colors.deepOrange;
-  final TagType tag;
-  List<Uint8List> tagData = [];
-  tag = mfClassicGetChameleonTagType(
-      mfClassicGetCardTypeByBlockCount(blocks.length));
 
-  for (var block in blocks) {
-    if (block == '--------------------------------') {
-      tagData.add(Uint8List(0));
-    } else if (RegExp(r'^[0-9A-Fa-f]{32}$').hasMatch(block)) {
-      tagData.add(hexToBytes(block));
-    } else {
-      throw const FormatException('Invalid MCT block');
+  final block0 = hexToBytes(manufacturer.first);
+  final maxSector = blocksBySector.keys.reduce((a, b) => a > b ? a : b);
+  final MifareClassicType type;
+  if (maxSector > 31) {
+    type = MifareClassicType.m4k;
+  } else if (maxSector > 17) {
+    type = MifareClassicType.m2k;
+  } else if (maxSector <= 4 && block0[5] == 0x09) {
+    type = MifareClassicType.mini;
+  } else {
+    type = MifareClassicType.m1k;
+  }
+  final blockCount = switch (type) {
+    MifareClassicType.m4k => 256,
+    MifareClassicType.m2k => 128,
+    MifareClassicType.mini => 20,
+    _ => maxSector > 15 ? 72 : 64,
+  };
+
+  final tagData = List<Uint8List>.generate(blockCount, (_) => Uint8List(0));
+  var partialBlocks = 0;
+  for (final entry in blocksBySector.entries) {
+    final first = mfClassicGetFirstBlockCountBySector(entry.key);
+    for (var offset = 0; offset < entry.value.length; offset++) {
+      final line = entry.value[offset];
+      if (line == _mctNoDataBlock) continue;
+      if (line.contains('-')) partialBlocks++;
+      tagData[first + offset] = hexToBytes(line.replaceAll('-', '0'));
     }
   }
+  final unreadBlocks = tagData.where((block) => block.isEmpty).length;
 
-  return CardSave(
-      id: id,
-      uid: uid,
-      sak: sak,
-      name: name,
-      tag: tag,
-      data: tagData,
-      color: color,
-      ats: Uint8List.fromList(ats),
-      atqa: Uint8List.fromList(atqa));
+  // A 4-byte UID is followed by its BCC; otherwise block 0 holds a 7-byte UID.
+  final hasUid4 = block0[4] == calculateBcc(block0.sublist(0, 4));
+  final uid = bytesToHex(block0.sublist(0, hasUid4 ? 4 : 7)).toUpperCase();
+  final sak = hasUid4 ? block0[5] : block0[7];
+  final atqa = hasUid4 ? [block0[7], block0[6]] : [block0[9], block0[8]];
+
+  return MctImportResult(
+    card: CardSave(
+        id: const Uuid().v4(),
+        uid: uid,
+        sak: sak,
+        name: uid,
+        tag: mfClassicGetChameleonTagType(type),
+        data: tagData,
+        color: Colors.deepOrange,
+        ats: Uint8List(0),
+        atqa: Uint8List.fromList(atqa)),
+    sectors: blocksBySector.keys.toList(),
+    unreadBlocks: unreadBlocks,
+    partialBlocks: partialBlocks,
+  );
 }
+
+CardSave mctToCardSave(String data) => parseMctDump(data).card;
 
 /// Exports a four-byte-UID MIFARE Classic dump using MCT sector headers.
 /// Unread blocks keep MCT's no-data marker instead of becoming zeroed data.

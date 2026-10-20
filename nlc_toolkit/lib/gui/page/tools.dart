@@ -3,6 +3,7 @@ import 'package:nlc_toolkit/gui/menu/tools/bcc_calculator.dart';
 import 'package:nlc_toolkit/gui/menu/tools/dictionary_download.dart';
 import 'package:nlc_toolkit/gui/menu/tools/hf_sniffing.dart';
 import 'package:nlc_toolkit/gui/menu/tools/lf_sniffing.dart';
+import 'package:nlc_toolkit/gui/menu/tools/mct_import.dart';
 import 'package:nlc_toolkit/gui/menu/tools/t55xx_password_cleaner.dart';
 import 'package:nlc_toolkit/main.dart';
 import 'package:flutter/material.dart';
@@ -45,6 +46,12 @@ class ToolsPageState extends State<ToolsPage> {
         description: localizations.bcc_calculator_description,
         icon: Icons.calculate_outlined,
         onPressed: const BccCalculatorMenu(),
+      ),
+      ToolItem(
+        name: localizations.mct_import,
+        description: localizations.mct_import_description,
+        icon: Icons.upload_file,
+        onPressed: const MctImportMenu(),
       ),
       ToolItem(
         name: localizations.dictionary_download,

@@ -912,8 +912,8 @@ class SavedCardsPageState extends State<SavedCardsPage> {
                                                     tag = flipperNfcToCardSave(
                                                       string,
                                                     );
-                                                  } else if (string.contains(
-                                                    "+Sector: 0",
+                                                  } else if (isMctDump(
+                                                    string,
                                                   )) {
                                                     // Mifare Classic Tool
                                                     tag = mctToCardSave(string);

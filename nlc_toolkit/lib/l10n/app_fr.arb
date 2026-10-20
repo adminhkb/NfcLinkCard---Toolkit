@@ -745,5 +745,15 @@
   "dynamic_sequence_control_blocks": "Blocs instables sans passage :",
   "dynamic_sequence_unverifiable_control_blocks": "Blocs non v\u00e9rifiables par le t\u00e9moin :",
   "dynamic_sequence_central_caveat": "Le lecteur ou la centrale peut g\u00e9rer un \u00e9tat invisible dans le dump. M\u00eame un motif compatible ne confirme pas un code tournant.",
-  "dynamic_sequence_zero_caveat": "Un bloc rempli de 00 peut \u00eatre un \u00e9chec de lecture. Il est exclu de cette comparaison."
+  "dynamic_sequence_zero_caveat": "Un bloc rempli de 00 peut \u00eatre un \u00e9chec de lecture. Il est exclu de cette comparaison.",
+  "mct_import": "Importer des dumps MCT",
+  "mct_import_description": "Ajouter des dumps MIFARE Classic Tool (.mct) \u00e0 la biblioth\u00e8que",
+  "mct_import_hint": "S\u00e9lectionnez un ou plusieurs dumps enregistr\u00e9s par MIFARE Classic Tool. Chaque fichier devient une carte \u00e0 la racine de la biblioth\u00e8que.",
+  "mct_import_choose": "Choisir des fichiers",
+  "mct_import_imported": "Import\u00e9s : {count}",
+  "mct_import_card": "UID {uid} \u00b7 {sectors} secteurs",
+  "mct_import_unread": "{count} blocs non lus",
+  "mct_import_partial": "{count} blocs avec des octets inconnus, enregistr\u00e9s en 00",
+  "mct_import_invalid": "Dump MCT invalide : {reason}",
+  "mct_import_read_error": "Le fichier n'a pas pu \u00eatre lu."
 }

@@ -63,7 +63,7 @@ La compilation iOS et macOS nécessite un environnement Apple adapté. Les ident
 Depuis la racine du dépôt, générer une archive contenant l'exécutable et ses dépendances :
 
 ```powershell
-pwsh -File nlc_toolkit/tool/package_windows.ps1
+powershell -ExecutionPolicy Bypass -File nlc_toolkit/tool/package_windows.ps1
 ```
 
 Décompresser l'archive créée dans `nlc_toolkit/dist/` avant de lancer `nlc_toolkit.exe`. Brancher le ChameleonUltra V2 en USB, puis le sélectionner dans **Connexion**. Si la détection automatique ne le trouve pas, choisir son port COM avec **Connexion manuelle**. Le Bluetooth du PC n'est pas encore pris en charge dans la version Windows.

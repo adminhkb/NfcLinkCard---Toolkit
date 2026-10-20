@@ -745,5 +745,15 @@
   "dynamic_sequence_control_blocks": "Blocks unstable without use:",
   "dynamic_sequence_unverifiable_control_blocks": "Blocks not verified by control:",
   "dynamic_sequence_central_caveat": "The reader or controller may manage state that is invisible in the dump. Even a compatible pattern does not confirm a rolling code.",
-  "dynamic_sequence_zero_caveat": "An all-zero block may represent a failed read. It is excluded from this comparison."
+  "dynamic_sequence_zero_caveat": "An all-zero block may represent a failed read. It is excluded from this comparison.",
+  "mct_import": "Import MCT dumps",
+  "mct_import_description": "Add MIFARE Classic Tool (.mct) dumps to the library",
+  "mct_import_hint": "Select one or more dumps saved by MIFARE Classic Tool. Each file becomes a card at the root of the library.",
+  "mct_import_choose": "Choose files",
+  "mct_import_imported": "Imported: {count}",
+  "mct_import_card": "UID {uid} · {sectors} sectors",
+  "mct_import_unread": "{count} unread blocks",
+  "mct_import_partial": "{count} blocks with unknown bytes, stored as 00",
+  "mct_import_invalid": "Not a valid MCT dump: {reason}",
+  "mct_import_read_error": "The file could not be read."
 }
