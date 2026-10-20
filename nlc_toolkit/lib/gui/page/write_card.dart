@@ -1,6 +1,6 @@
 import 'package:nlc_toolkit/connector/serial_abstract.dart';
 import 'package:nlc_toolkit/gui/component/card_list.dart';
-import 'package:nlc_toolkit/gui/component/mifare/basic_block_writer.dart';
+import 'package:nlc_toolkit/gui/component/mifare/mct_write_panel.dart';
 import 'package:nlc_toolkit/gui/component/mifare/vanity_sak_checkbox.dart';
 import 'package:nlc_toolkit/helpers/definitions.dart';
 import 'package:nlc_toolkit/helpers/general.dart';
@@ -363,7 +363,7 @@ class WriteCardPageState extends State<WriteCardPage> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  const BasicMifareBlockWriter(),
+                  const MctWritePanel(),
                   const SizedBox(height: 18),
                   Card(
                     child: ExpansionTile(

@@ -1136,7 +1136,7 @@ class ChameleonCommunicator {
     return commands;
   }
 
-  Future<void> manipulateValueBlock(
+  Future<bool> manipulateValueBlock(
       int srcBlock,
       int srcKeyType,
       Uint8List srcKey,
@@ -1145,13 +1145,13 @@ class ChameleonCommunicator {
       int dstBlock,
       int dstKeyType,
       Uint8List dstKey) async {
-    await sendCmd(ChameleonCommand.mf1ManipulateValueBlock,
+    final resp = await sendCmd(ChameleonCommand.mf1ManipulateValueBlock,
         data: Uint8List.fromList([
           srcKeyType,
           srcBlock,
           ...srcKey,
           op.value,
-          value >> 24,
+          value >> 24 & 0xFF,
           value >> 16 & 0xFF,
           value >> 8 & 0xFF,
           value & 0xFF,
@@ -1159,6 +1159,7 @@ class ChameleonCommunicator {
           dstBlock,
           ...dstKey
         ]));
+    return resp?.status == 0;
   }
 
   Future<Uint8List> send14ARaw(Uint8List data,
