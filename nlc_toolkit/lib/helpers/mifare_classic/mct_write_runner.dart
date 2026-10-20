@@ -101,10 +101,13 @@ Future<MctWriteReport> mctRunWritePlan(
   final report = MctWriteReport();
   final total = plan.blockCount;
   var done = 0;
+  // Writing block 0 changes the UID of a CUID/Gen2 card, so the expected UID
+  // follows that write instead of aborting the rest of the clone.
+  var expectedUid = keyMap.uid;
 
   for (final entry in plan.blocksBySector.entries) {
     final sector = entry.key;
-    if (!await _sameCard(communicator, keyMap.uid)) {
+    if (!await _sameCard(communicator, expectedUid)) {
       report.cardChanged = true;
       return report;
     }
@@ -122,6 +125,11 @@ Future<MctWriteReport> mctRunWritePlan(
             block.data,
           )) {
             continue;
+          }
+          if (block.block == 0 && block.data.length == 16) {
+            expectedUid = Uint8List.fromList(
+              block.data.sublist(0, expectedUid.length),
+            );
           }
           var outcome = MctBlockOutcome.written;
           if (!block.isTrailer) {
