@@ -338,7 +338,14 @@ class SharedPreferencesLogger extends LogOutput {
 }
 
 String chameleonDeviceName(ChameleonDevice device) {
-  return (device == ChameleonDevice.ultra) ? "Ultra" : "Lite";
+  switch (device) {
+    case ChameleonDevice.ultra:
+      return 'Ultra';
+    case ChameleonDevice.lite:
+      return 'Lite';
+    case ChameleonDevice.none:
+      return 'Unknown';
+  }
 }
 
 class ChameleonLogFilter extends LogFilter {
@@ -426,9 +433,11 @@ void updateNavigationRailWidth(BuildContext context) async {
   if (context.mounted) {
     var appState = Provider.of<ChameleonGUIState>(context, listen: false);
     await asyncSleep(500);
-    appState.navigationRailSize =
-        appState.navigationRailKey.currentContext!.size;
-    appState.changesMade();
+    final railSize = appState.navigationRailKey.currentContext?.size;
+    if (context.mounted && railSize != null) {
+      appState.navigationRailSize = railSize;
+      appState.changesMade();
+    }
   }
 }
 

@@ -33,7 +33,7 @@ class MifareClassicDumpHighlighter {
   }
 
   static Color getDefaultColor(BuildContext context) {
-    return Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    return Theme.of(context).colorScheme.onSurface;
   }
 
   static const Color uidColor = Colors.purple;

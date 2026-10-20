@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:chameleonultragui/helpers/definitions.dart';
 import 'package:chameleonultragui/helpers/general.dart';
 import 'package:chameleonultragui/helpers/mifare_classic/general.dart';
 import 'package:chameleonultragui/helpers/mifare_ultralight/general.dart';
@@ -9,6 +10,7 @@ import 'package:chameleonultragui/helpers/mifare_ultralight/dump_highlighter.dar
 import 'package:chameleonultragui/helpers/mifare_ultralight/dump_analyzer.dart';
 import 'package:chameleonultragui/helpers/ndef.dart';
 import 'package:chameleonultragui/gui/menu/pages/ndef_editor.dart';
+import 'package:chameleonultragui/gui/menu/dialogs/card/dynamic_badge_analysis.dart';
 import 'package:chameleonultragui/sharedprefsprovider.dart';
 import 'package:chameleonultragui/main.dart';
 import 'package:provider/provider.dart';
@@ -20,11 +22,7 @@ class DumpEditor extends StatefulWidget {
   final CardSave cardSave;
   final Function(List<Uint8List>) onSave;
 
-  const DumpEditor({
-    super.key,
-    required this.cardSave,
-    required this.onSave,
-  });
+  const DumpEditor({super.key, required this.cardSave, required this.onSave});
 
   @override
   DumpEditorState createState() => DumpEditorState();
@@ -63,8 +61,9 @@ class DumpEditorState extends State<DumpEditor> {
   }
 
   void initEditor() {
-    dumpData =
-        widget.cardSave.data.map((bytes) => Uint8List.fromList(bytes)).toList();
+    dumpData = widget.cardSave.data
+        .map((bytes) => Uint8List.fromList(bytes))
+        .toList();
     controllers = [];
     initialTexts = [];
 
@@ -89,8 +88,9 @@ class DumpEditorState extends State<DumpEditor> {
   }
 
   void _initClassicEditor() {
-    MifareClassicType cardType =
-        chameleonTagTypeGetMfClassicType(widget.cardSave.tag);
+    MifareClassicType cardType = chameleonTagTypeGetMfClassicType(
+      widget.cardSave.tag,
+    );
     int sectorCount = mfClassicGetSectorCount(cardType);
 
     for (int sector = 0; sector < sectorCount; sector++) {
@@ -106,8 +106,9 @@ class DumpEditorState extends State<DumpEditor> {
         }
       }
 
-      TextEditingController controller =
-          TextEditingController(text: sectorText);
+      TextEditingController controller = TextEditingController(
+        text: sectorText,
+      );
       controller.addListener(() => _onDataChanged(sector));
       controllers.add(controller);
       initialTexts.add(sectorText);
@@ -138,7 +139,9 @@ class DumpEditorState extends State<DumpEditor> {
   }
 
   TextEditingValue _handleTextInput(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     if (isInsertMode) {
       return _handleInsertMode(oldValue, newValue);
     } else {
@@ -147,7 +150,9 @@ class DumpEditorState extends State<DumpEditor> {
   }
 
   TextEditingValue _handleInsertMode(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     if (newValue.text.length <= oldValue.text.length) {
       return _handleDeletion(oldValue, newValue);
     }
@@ -160,8 +165,10 @@ class DumpEditorState extends State<DumpEditor> {
     String insertedText = '';
     if (newText.length > oldText.length) {
       int insertLength = newText.length - oldText.length;
-      insertedText =
-          newText.substring(insertionPos, insertionPos + insertLength);
+      insertedText = newText.substring(
+        insertionPos,
+        insertionPos + insertLength,
+      );
     }
 
     // Remove any non-hex characters from insertion
@@ -202,7 +209,8 @@ class DumpEditorState extends State<DumpEditor> {
     }
 
     // Insert characters into clean line
-    String newCleanLine = cleanLine.substring(0, cleanPos) +
+    String newCleanLine =
+        cleanLine.substring(0, cleanPos) +
         insertedText +
         cleanLine.substring(cleanPos);
 
@@ -236,12 +244,15 @@ class DumpEditorState extends State<DumpEditor> {
     return TextEditingValue(
       text: finalText,
       selection: TextSelection.collapsed(
-          offset: newCursorPos.clamp(0, finalText.length)),
+        offset: newCursorPos.clamp(0, finalText.length),
+      ),
     );
   }
 
   TextEditingValue _handleOverwriteMode(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     if (newValue.text.length <= oldValue.text.length) {
       return _handleDeletion(oldValue, newValue);
     }
@@ -296,11 +307,14 @@ class DumpEditorState extends State<DumpEditor> {
 
     // In overwrite mode, replace characters instead of inserting them
     String newCleanLine = cleanLine;
-    for (int i = 0;
-        i < typedText.length && cleanPos + i < cleanLine.length;
-        i++) {
+    for (
+      int i = 0;
+      i < typedText.length && cleanPos + i < cleanLine.length;
+      i++
+    ) {
       if (cleanPos + i < newCleanLine.length) {
-        newCleanLine = newCleanLine.substring(0, cleanPos + i) +
+        newCleanLine =
+            newCleanLine.substring(0, cleanPos + i) +
             typedText[i] +
             newCleanLine.substring(cleanPos + i + 1);
       }
@@ -310,8 +324,9 @@ class DumpEditorState extends State<DumpEditor> {
     if (cleanPos >= cleanLine.length &&
         newCleanLine.length < hexCharsPerBlock) {
       int remainingChars = hexCharsPerBlock - newCleanLine.length;
-      int charsToAdd =
-          typedText.length < remainingChars ? typedText.length : remainingChars;
+      int charsToAdd = typedText.length < remainingChars
+          ? typedText.length
+          : remainingChars;
       newCleanLine += typedText.substring(0, charsToAdd);
     }
 
@@ -345,16 +360,20 @@ class DumpEditorState extends State<DumpEditor> {
     return TextEditingValue(
       text: finalText,
       selection: TextSelection.collapsed(
-          offset: newCursorPos.clamp(0, finalText.length)),
+        offset: newCursorPos.clamp(0, finalText.length),
+      ),
     );
   }
 
   TextEditingValue _handleDeletion(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     return TextEditingValue(
       text: oldValue.text,
       selection: TextSelection.collapsed(
-          offset: newValue.selection.baseOffset.clamp(0, oldValue.text.length)),
+        offset: newValue.selection.baseOffset.clamp(0, oldValue.text.length),
+      ),
     );
   }
 
@@ -406,7 +425,8 @@ class DumpEditorState extends State<DumpEditor> {
           spacedRelativePos++;
         }
 
-        newCursorPos = processedLineStartPos +
+        newCursorPos =
+            processedLineStartPos +
             spacedRelativePos.clamp(0, spacedLine.length);
       }
 
@@ -419,7 +439,8 @@ class DumpEditorState extends State<DumpEditor> {
     return TextEditingValue(
       text: processedText,
       selection: TextSelection.collapsed(
-          offset: newCursorPos.clamp(0, processedText.length)),
+        offset: newCursorPos.clamp(0, processedText.length),
+      ),
     );
   }
 
@@ -498,8 +519,10 @@ class DumpEditorState extends State<DumpEditor> {
         for (int block = 0; block < lines.length; block++) {
           int blockIndex = firstBlock + block;
           if (blockIndex < updatedDump.length) {
-            String hexData =
-                lines[block].replaceAll(' ', '').trim().toUpperCase();
+            String hexData = lines[block]
+                .replaceAll(' ', '')
+                .trim()
+                .toUpperCase();
             if (hexData != '-' * 32) {
               updatedDump[blockIndex] = hexToBytes(hexData);
             }
@@ -572,9 +595,11 @@ class DumpEditorState extends State<DumpEditor> {
       final lines = controllers[sector].text.split('\n');
       if (lines.length != mfClassicGetBlockCountBySector(sector)) return null;
       final firstBlock = mfClassicGetFirstBlockCountBySector(sector);
-      for (int relativeBlock = 0;
-          relativeBlock < lines.length;
-          relativeBlock++) {
+      for (
+        int relativeBlock = 0;
+        relativeBlock < lines.length;
+        relativeBlock++
+      ) {
         final hex = lines[relativeBlock].replaceAll(' ', '').trim();
         if (hex.length != hexCharsPerBlock || hex.contains('-')) return null;
         try {
@@ -656,9 +681,11 @@ class DumpEditorState extends State<DumpEditor> {
         if (hex.length != hexCharsPerBlock || hex.contains('-')) continue;
         sectorIndexes.add(sector);
         lineIndexes.add(line);
-        absoluteBlockIndexes.add(isUltralight
-            ? line
-            : mfClassicGetFirstBlockCountBySector(sector) + line);
+        absoluteBlockIndexes.add(
+          isUltralight
+              ? line
+              : mfClassicGetFirstBlockCountBySector(sector) + line,
+        );
         String ascii = isUltralight
             ? MifareUltralightDumpAnalyzer.hexToAscii(hex)
             : MifareClassicDumpAnalyzer.hexToAscii(hex);
@@ -681,9 +708,12 @@ class DumpEditorState extends State<DumpEditor> {
                 if (error != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(error!,
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.error)),
+                    child: Text(
+                      error!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
                   ),
                 Expanded(
                   child: ListView.separated(
@@ -695,7 +725,8 @@ class DumpEditorState extends State<DumpEditor> {
                       maxLength: bytesPerBlock,
                       inputFormatters: [
                         FilteringTextInputFormatter.allow(
-                            RegExp(r'[\x20-\x7E]')),
+                          RegExp(r'[\x20-\x7E]'),
+                        ),
                         LengthLimitingTextInputFormatter(bytesPerBlock),
                       ],
                       decoration: InputDecoration(
@@ -721,7 +752,8 @@ class DumpEditorState extends State<DumpEditor> {
                   if (asciiControllers[i].text != asciiInitialTexts[i] &&
                       asciiControllers[i].text.length != bytesPerBlock) {
                     setDialogState(() {
-                      error = '${localizations.invalid_data_in_block} '
+                      error =
+                          '${localizations.invalid_data_in_block} '
                           '${absoluteBlockIndexes[i]}; '
                           '${localizations.ascii_characters_required(bytesPerBlock)}';
                     });
@@ -732,9 +764,7 @@ class DumpEditorState extends State<DumpEditor> {
                   if (asciiControllers[i].text == asciiInitialTexts[i]) {
                     continue;
                   }
-                  String hex = asciiControllers[i]
-                      .text
-                      .codeUnits
+                  String hex = asciiControllers[i].text.codeUnits
                       .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
                       .join();
                   _replaceBlockHex(sectorIndexes[i], lineIndexes[i], hex);
@@ -760,36 +790,45 @@ class DumpEditorState extends State<DumpEditor> {
     List<List<List<int>>?> trailerPermissions = [];
     for (int sector = 0; sector < controllers.length; sector++) {
       List<String> lines = controllers[sector].text.split('\n');
-      String trailer =
-          lines.isEmpty ? '' : lines.last.replaceAll(' ', '').trim();
+      String trailer = lines.isEmpty
+          ? ''
+          : lines.last.replaceAll(' ', '').trim();
       List<int>? values;
       if (trailer.length == 32) {
-        values = MifareClassicDumpAnalyzer.accessConditionValues(
-                trailer.substring(12, 18)) ??
+        values =
+            MifareClassicDumpAnalyzer.accessConditionValues(
+              trailer.substring(12, 18),
+            ) ??
             // Keep the meaningful C1/C2/C3 bits editable when only their
             // inverted redundancy is damaged. Saving repairs all three bytes.
             MifareClassicDumpAnalyzer.accessConditionValues(
-                trailer.substring(14, 18));
+              trailer.substring(14, 18),
+            );
       }
       selections.add(values);
-      dataPermissions.add(values == null
-          ? null
-          : List<List<int>>.generate(
-              3,
-              (block) => MifareClassicDumpAnalyzer.dataAccessPermissions(
-                  values![block]),
-            ));
-      trailerPermissions.add(values == null
-          ? null
-          : MifareClassicDumpAnalyzer.trailerAccessPermissions(values[3]));
+      dataPermissions.add(
+        values == null
+            ? null
+            : List<List<int>>.generate(
+                3,
+                (block) => MifareClassicDumpAnalyzer.dataAccessPermissions(
+                  values![block],
+                ),
+              ),
+      );
+      trailerPermissions.add(
+        values == null
+            ? null
+            : MifareClassicDumpAnalyzer.trailerAccessPermissions(values[3]),
+      );
     }
 
     String permissionLabel(int permission) => switch (permission) {
-          1 => 'A',
-          2 => 'B',
-          3 => 'A/B',
-          _ => '-',
-        };
+      1 => 'A',
+      2 => 'B',
+      3 => 'A/B',
+      _ => '-',
+    };
     String? error;
 
     await showDialog<void>(
@@ -807,8 +846,9 @@ class DumpEditorState extends State<DumpEditor> {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
                       error!,
-                      style:
-                          TextStyle(color: Theme.of(context).colorScheme.error),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                     ),
                   ),
                 Expanded(
@@ -822,7 +862,8 @@ class DumpEditorState extends State<DumpEditor> {
                         return ListTile(
                           title: Text('${localizations.sector} $sector'),
                           subtitle: Text(
-                              localizations.failed_to_decode_access_conditions),
+                            localizations.failed_to_decode_access_conditions,
+                          ),
                         );
                       }
 
@@ -840,10 +881,12 @@ class DumpEditorState extends State<DumpEditor> {
                               isDense: true,
                             ),
                             items: [1, 2, 3, 0]
-                                .map((value) => DropdownMenuItem<int>(
-                                      value: value,
-                                      child: Text(permissionLabel(value)),
-                                    ))
+                                .map(
+                                  (value) => DropdownMenuItem<int>(
+                                    value: value,
+                                    child: Text(permissionLabel(value)),
+                                  ),
+                                )
                                 .toList(),
                             onChanged: onChanged,
                           ),
@@ -853,7 +896,7 @@ class DumpEditorState extends State<DumpEditor> {
                       List<Widget> blockEditors = List.generate(3, (block) {
                         String label = sector >= 32
                             ? '${localizations.block} '
-                                '${block * 5}-${block * 5 + 4}'
+                                  '${block * 5}-${block * 5 + 4}'
                             : '${localizations.block} $block';
                         List<String> actions = [
                           localizations.read,
@@ -869,10 +912,12 @@ class DumpEditorState extends State<DumpEditor> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(label,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleSmall),
+                                  Text(
+                                    label,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall,
+                                  ),
                                   const SizedBox(height: 12),
                                   Wrap(
                                     spacing: 12,
@@ -903,70 +948,75 @@ class DumpEditorState extends State<DumpEditor> {
                         localizations.acl,
                         '${localizations.key} B',
                       ];
-                      blockEditors.add(SizedBox(
-                        width: double.infinity,
-                        child: Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(localizations.sector_trailer,
-                                    style:
-                                        Theme.of(context).textTheme.titleSmall),
-                                const SizedBox(height: 8),
-                                ...List.generate(
+                      blockEditors.add(
+                        SizedBox(
+                          width: double.infinity,
+                          child: Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    localizations.sector_trailer,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ...List.generate(
                                     3,
                                     (part) => Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 6),
-                                          child: Row(
-                                            children: [
-                                              SizedBox(
-                                                  width: 80,
-                                                  child:
-                                                      Text(trailerParts[part])),
-                                              Expanded(
-                                                child: permissionDropdown(
-                                                  localizations.read,
-                                                  trailer[part][0],
-                                                  (permission) {
-                                                    if (permission == null) {
-                                                      return;
-                                                    }
-                                                    setDialogState(() {
-                                                      trailer[part][0] =
-                                                          permission;
-                                                      error = null;
-                                                    });
-                                                  },
-                                                ),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Expanded(
-                                                child: permissionDropdown(
-                                                  localizations.write,
-                                                  trailer[part][1],
-                                                  (permission) {
-                                                    if (permission == null) {
-                                                      return;
-                                                    }
-                                                    setDialogState(() {
-                                                      trailer[part][1] =
-                                                          permission;
-                                                      error = null;
-                                                    });
-                                                  },
-                                                ),
-                                              ),
-                                            ],
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 6,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          SizedBox(
+                                            width: 80,
+                                            child: Text(trailerParts[part]),
                                           ),
-                                        )),
-                              ],
+                                          Expanded(
+                                            child: permissionDropdown(
+                                              localizations.read,
+                                              trailer[part][0],
+                                              (permission) {
+                                                if (permission == null) {
+                                                  return;
+                                                }
+                                                setDialogState(() {
+                                                  trailer[part][0] = permission;
+                                                  error = null;
+                                                });
+                                              },
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: permissionDropdown(
+                                              localizations.write,
+                                              trailer[part][1],
+                                              (permission) {
+                                                if (permission == null) {
+                                                  return;
+                                                }
+                                                setDialogState(() {
+                                                  trailer[part][1] = permission;
+                                                  error = null;
+                                                });
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ));
+                      );
 
                       return ExpansionTile(
                         title: Text('${localizations.sector} $sector'),
@@ -997,35 +1047,43 @@ class DumpEditorState extends State<DumpEditor> {
 
                   List<int> validated = List<int>.from(values);
                   for (int block = 0; block < 3; block++) {
-                    int? condition = MifareClassicDumpAnalyzer
-                        .dataAccessConditionForPermissions(blocks[block]);
+                    int? condition =
+                        MifareClassicDumpAnalyzer.dataAccessConditionForPermissions(
+                          blocks[block],
+                        );
                     if (condition == null) {
-                      setDialogState(() => error =
-                          '${localizations.invalid_data_in_sector} $sector, '
-                              '${localizations.block} $block');
+                      setDialogState(
+                        () => error =
+                            '${localizations.invalid_data_in_sector} $sector, '
+                            '${localizations.block} $block',
+                      );
                       return;
                     }
                     validated[block] = condition;
                   }
 
-                  int? trailerCondition = MifareClassicDumpAnalyzer
-                      .trailerAccessConditionForPermissions(
-                    trailer,
-                    preferredCondition: values[3],
-                  );
+                  int? trailerCondition =
+                      MifareClassicDumpAnalyzer.trailerAccessConditionForPermissions(
+                        trailer,
+                        preferredCondition: values[3],
+                      );
                   if (trailerCondition == null) {
-                    setDialogState(() => error =
-                        '${localizations.invalid_data_in_sector} $sector, '
-                            '${localizations.sector_trailer}');
+                    setDialogState(
+                      () => error =
+                          '${localizations.invalid_data_in_sector} $sector, '
+                          '${localizations.sector_trailer}',
+                    );
                     return;
                   }
                   validated[3] = trailerCondition;
                   validatedSelections.add(validated);
                 }
 
-                for (int sector = 0;
-                    sector < validatedSelections.length;
-                    sector++) {
+                for (
+                  int sector = 0;
+                  sector < validatedSelections.length;
+                  sector++
+                ) {
                   List<int>? values = validatedSelections[sector];
                   if (values == null) continue;
                   List<String> lines = controllers[sector].text.split('\n');
@@ -1033,11 +1091,10 @@ class DumpEditorState extends State<DumpEditor> {
                   String access =
                       MifareClassicDumpAnalyzer.encodeAccessConditions(values);
                   _replaceBlockHex(
-                      sector,
-                      lines.length - 1,
-                      trailer.substring(0, 12) +
-                          access +
-                          trailer.substring(18));
+                    sector,
+                    lines.length - 1,
+                    trailer.substring(0, 12) + access + trailer.substring(18),
+                  );
                 }
                 Navigator.pop(dialogContext);
               },
@@ -1067,8 +1124,9 @@ class DumpEditorState extends State<DumpEditor> {
         if (value == null || address == null) continue;
         sectorIndexes.add(sector);
         lineIndexes.add(block);
-        absoluteBlockIndexes
-            .add(mfClassicGetFirstBlockCountBySector(sector) + block);
+        absoluteBlockIndexes.add(
+          mfClassicGetFirstBlockCountBySector(sector) + block,
+        );
         valueControllers.add(TextEditingController(text: value.toString()));
         addressControllers.add(TextEditingController(text: address.toString()));
       }
@@ -1088,9 +1146,12 @@ class DumpEditorState extends State<DumpEditor> {
                 : Column(
                     children: [
                       if (error != null)
-                        Text(error!,
-                            style: TextStyle(
-                                color: Theme.of(context).colorScheme.error)),
+                        Text(
+                          error!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
                       Expanded(
                         child: ListView.separated(
                           itemCount: valueControllers.length,
@@ -1100,16 +1161,19 @@ class DumpEditorState extends State<DumpEditor> {
                               SizedBox(
                                 width: 72,
                                 child: Text(
-                                    '${localizations.block} ${absoluteBlockIndexes[index]}'),
+                                  '${localizations.block} ${absoluteBlockIndexes[index]}',
+                                ),
                               ),
                               Expanded(
                                 child: TextField(
                                   controller: valueControllers[index],
                                   keyboardType:
                                       const TextInputType.numberWithOptions(
-                                          signed: true),
+                                        signed: true,
+                                      ),
                                   decoration: InputDecoration(
-                                      labelText: localizations.value),
+                                    labelText: localizations.value,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -1119,7 +1183,8 @@ class DumpEditorState extends State<DumpEditor> {
                                   controller: addressControllers[index],
                                   keyboardType: TextInputType.number,
                                   decoration: InputDecoration(
-                                      labelText: localizations.address),
+                                    labelText: localizations.address,
+                                  ),
                                 ),
                               ),
                             ],
@@ -1148,8 +1213,10 @@ class DumpEditorState extends State<DumpEditor> {
                         address == null ||
                         address < 0 ||
                         address > 255) {
-                      setDialogState(() => error =
-                          '${localizations.invalid_data_in_block} ${absoluteBlockIndexes[i]}');
+                      setDialogState(
+                        () => error =
+                            '${localizations.invalid_data_in_block} ${absoluteBlockIndexes[i]}',
+                      );
                       return;
                     }
                     values.add(value);
@@ -1160,7 +1227,9 @@ class DumpEditorState extends State<DumpEditor> {
                       sectorIndexes[i],
                       lineIndexes[i],
                       MifareClassicDumpAnalyzer.intToValueBlock(
-                          values[i], addresses[i]),
+                        values[i],
+                        addresses[i],
+                      ),
                     );
                   }
                   Navigator.pop(dialogContext);
@@ -1187,15 +1256,20 @@ class DumpEditorState extends State<DumpEditor> {
       }
 
       if (line.isEmpty) {
-        spans.add(TextSpan(
-          text: '',
-          style: TextStyle(color: _getDefaultHighlightColor()),
-        ));
+        spans.add(
+          TextSpan(
+            text: '',
+            style: TextStyle(color: _getDefaultHighlightColor()),
+          ),
+        );
         continue;
       }
 
-      List<TextSpan> lineSpans =
-          _getHighlightedLineSpans(line, controllerIndex, i);
+      List<TextSpan> lineSpans = _getHighlightedLineSpans(
+        line,
+        controllerIndex,
+        i,
+      );
       spans.addAll(lineSpans);
     }
 
@@ -1215,31 +1289,43 @@ class DumpEditorState extends State<DumpEditor> {
           ? i
           : mfClassicGetFirstBlockCountBySector(controllerIndex) + i;
       String blockNumberStr = blockNumber.toString().padLeft(3, ' ');
-      spans.add(TextSpan(
-        text: '$blockNumberStr: ',
-        style: TextStyle(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Colors.grey.shade400
-              : Colors.grey.shade600,
-          fontWeight: FontWeight.normal,
+      spans.add(
+        TextSpan(
+          text: '$blockNumberStr: ',
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.grey.shade400
+                : Colors.grey.shade600,
+            fontWeight: FontWeight.normal,
+          ),
         ),
-      ));
+      );
     }
 
     return spans;
   }
 
   List<TextSpan> _getHighlightedLineSpans(
-      String line, int controllerIndex, int lineIndex) {
+    String line,
+    int controllerIndex,
+    int lineIndex,
+  ) {
     if (line.isEmpty) {
       return [
-        TextSpan(text: '', style: TextStyle(color: _getDefaultHighlightColor()))
+        TextSpan(
+          text: '',
+          style: TextStyle(color: _getDefaultHighlightColor()),
+        ),
       ];
     }
 
     if (isUltralight) {
       return MifareUltralightDumpHighlighter.highlightBlock(
-          line, lineIndex, context, widget.cardSave);
+        line,
+        lineIndex,
+        context,
+        widget.cardSave,
+      );
     } else {
       int blocksPerSector = mfClassicGetBlockCountBySector(controllerIndex);
       bool isSectorTrailer = lineIndex == blocksPerSector - 1;
@@ -1247,7 +1333,9 @@ class DumpEditorState extends State<DumpEditor> {
 
       if (isSectorTrailer) {
         return MifareClassicDumpHighlighter.highlightSectorTrailer(
-            line, context);
+          line,
+          context,
+        );
       } else if (isFirstBlock) {
         return MifareClassicDumpHighlighter.highlightFirstBlock(line, context);
       } else {
@@ -1306,7 +1394,10 @@ class DumpEditorState extends State<DumpEditor> {
   }
 
   List<TextSpan> _byteSpans(
-      String cleanHex, List<bool> byteDiff, int byteCount) {
+    String cleanHex,
+    List<bool> byteDiff,
+    int byteCount,
+  ) {
     Color normalColor = _getDefaultHighlightColor();
     Color diffColor = _getDiffColor();
 
@@ -1316,12 +1407,14 @@ class DumpEditorState extends State<DumpEditor> {
       String token = _byteAt(cleanHex, k);
       if (token.isEmpty) token = '--';
       bool differs = k < byteDiff.length ? byteDiff[k] : true;
-      spans.add(TextSpan(
-        text: token,
-        style: differs
-            ? TextStyle(color: diffColor, fontWeight: FontWeight.bold)
-            : TextStyle(color: normalColor),
-      ));
+      spans.add(
+        TextSpan(
+          text: token,
+          style: differs
+              ? TextStyle(color: diffColor, fontWeight: FontWeight.bold)
+              : TextStyle(color: normalColor),
+        ),
+      );
     }
     return spans;
   }
@@ -1331,8 +1424,10 @@ class DumpEditorState extends State<DumpEditor> {
     var appState = context.read<ChameleonGUIState>();
     List<CardSave> candidates = appState.sharedPreferencesProvider
         .getCards()
-        .where((card) =>
-            card.id != widget.cardSave.id && card.tag == widget.cardSave.tag)
+        .where(
+          (card) =>
+              card.id != widget.cardSave.id && card.tag == widget.cardSave.tag,
+        )
         .toList();
 
     if (candidates.isEmpty) {
@@ -1372,8 +1467,9 @@ class DumpEditorState extends State<DumpEditor> {
 
     if (selected != null) {
       setState(() {
-        compareData =
-            selected.data.map((bytes) => Uint8List.fromList(bytes)).toList();
+        compareData = selected.data
+            .map((bytes) => Uint8List.fromList(bytes))
+            .toList();
         compareName = selected.name;
         isCompareMode = true;
       });
@@ -1388,11 +1484,28 @@ class DumpEditorState extends State<DumpEditor> {
     });
   }
 
+  void _showDynamicBadgeAnalysis() {
+    final savedCards = context
+        .read<ChameleonGUIState>()
+        .sharedPreferencesProvider
+        .getCards();
+    showDialog<void>(
+      context: context,
+      builder: (context) => DynamicBadgeAnalysisDialog(
+        cardSave: widget.cardSave,
+        savedCards: savedCards,
+        hasUnsavedChanges: hasUnsavedChanges,
+      ),
+    );
+  }
+
   Widget _buildAdaptiveEditor(int controllerIndex) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        double optimalFontSize =
-            _guessOptimalFontSize(controllerIndex, constraints);
+        double optimalFontSize = _guessOptimalFontSize(
+          controllerIndex,
+          constraints,
+        );
         if (isCompareMode) {
           return _buildCompareView(controllerIndex, fontSize: optimalFontSize);
         }
@@ -1402,12 +1515,17 @@ class DumpEditorState extends State<DumpEditor> {
   }
 
   double _guessOptimalFontSize(
-      int controllerIndex, BoxConstraints constraints) {
+    int controllerIndex,
+    BoxConstraints constraints,
+  ) {
     String sampleText = _getLongestLine(controllerIndex);
 
     for (double fontSize = 16.0; fontSize >= 10.0; fontSize -= 0.1) {
-      if (_doesTextFitOnOneLine(sampleText, fontSize,
-          constraints.maxWidth - _calculateLeftPadding(context, fontSize))) {
+      if (_doesTextFitOnOneLine(
+        sampleText,
+        fontSize,
+        constraints.maxWidth - _calculateLeftPadding(context, fontSize),
+      )) {
         return fontSize;
       }
     }
@@ -1451,7 +1569,10 @@ class DumpEditorState extends State<DumpEditor> {
   }
 
   bool _doesTextFitOnOneLine(
-      String text, double fontSize, double availableWidth) {
+    String text,
+    double fontSize,
+    double availableWidth,
+  ) {
     final TextPainter textPainter = TextPainter(
       text: TextSpan(
         text: text,
@@ -1491,6 +1612,7 @@ class DumpEditorState extends State<DumpEditor> {
                         fontSize: fontSize,
                         height: 1.2,
                         letterSpacing: 0.0,
+                        color: _getDefaultHighlightColor(),
                       ),
                       children: _buildBlockNumbers(controllerIndex),
                     ),
@@ -1503,6 +1625,7 @@ class DumpEditorState extends State<DumpEditor> {
                           fontSize: fontSize,
                           height: 1.2,
                           letterSpacing: 0.0,
+                          color: _getDefaultHighlightColor(),
                         ),
                         children: _buildHighlightedTextOnly(controllerIndex),
                       ),
@@ -1518,33 +1641,42 @@ class DumpEditorState extends State<DumpEditor> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                width: _calculateLeftPadding(context, fontSize),
-              ),
+              SizedBox(width: _calculateLeftPadding(context, fontSize)),
               Expanded(
-                child: TextFormField(
-                  controller: controllers[controllerIndex],
-                  maxLines: null,
-                  style: TextStyle(
-                    fontFamily: 'RobotoMono',
-                    fontSize: fontSize,
-                    color: Colors.transparent,
-                    height: 1.2,
-                    letterSpacing: 0.0,
+                child: TextSelectionTheme(
+                  data: TextSelectionThemeData(
+                    selectionColor: Theme.of(context).colorScheme.primary
+                        .withValues(alpha: 0.24),
+                    cursorColor: Theme.of(context).colorScheme.primary,
                   ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                    hintText: '',
-                    isDense: true,
+                  child: TextFormField(
+                    controller: controllers[controllerIndex],
+                    maxLines: null,
+                    style: TextStyle(
+                      fontFamily: 'RobotoMono',
+                      fontSize: fontSize,
+                      color: Colors.transparent,
+                      height: 1.2,
+                      letterSpacing: 0.0,
+                    ),
+                    decoration: const InputDecoration(
+                      filled: false,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                      hintText: '',
+                      isDense: true,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'[0-9A-Fa-f\n\s-]'),
+                      ),
+                      TextInputFormatter.withFunction((oldValue, newValue) {
+                        return _handleTextInput(oldValue, newValue);
+                      }),
+                    ],
                   ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(
-                        RegExp(r'[0-9A-Fa-f\n\s-]')),
-                    TextInputFormatter.withFunction((oldValue, newValue) {
-                      return _handleTextInput(oldValue, newValue);
-                    }),
-                  ],
                 ),
               ),
             ],
@@ -1566,8 +1698,9 @@ class DumpEditorState extends State<DumpEditor> {
         : Colors.grey.shade700;
     Color defaultColor = _getDefaultHighlightColor();
 
-    String currentName =
-        widget.cardSave.name.isEmpty ? '⠀' : widget.cardSave.name;
+    String currentName = widget.cardSave.name.isEmpty
+        ? '⠀'
+        : widget.cardSave.name;
     String otherName = compareName.isEmpty ? '⠀' : compareName;
 
     for (int i = 0; i < lines.length; i++) {
@@ -1579,14 +1712,16 @@ class DumpEditorState extends State<DumpEditor> {
 
       String currentClean = line.replaceAll(' ', '').toUpperCase();
       Uint8List? otherBytes = _compareBytesFor(controllerIndex, i);
-      String otherClean =
-          otherBytes != null ? bytesToHex(otherBytes).toUpperCase() : '';
+      String otherClean = otherBytes != null
+          ? bytesToHex(otherBytes).toUpperCase()
+          : '';
 
       int byteCount = (currentClean.length + 1) ~/ 2;
       List<bool> byteDiff = [];
       bool blockDiffers = false;
       for (int k = 0; k < byteCount; k++) {
-        bool differs = otherClean.isEmpty ||
+        bool differs =
+            otherClean.isEmpty ||
             _byteAt(currentClean, k) != _byteAt(otherClean, k);
         byteDiff.add(differs);
         if (differs) blockDiffers = true;
@@ -1598,14 +1733,18 @@ class DumpEditorState extends State<DumpEditor> {
 
       if (!blockDiffers) {
         // Identical block: compact single line.
-        spans.add(TextSpan(
-          text: '$numStr: ',
-          style: TextStyle(color: blockNumberColor),
-        ));
-        spans.add(TextSpan(
-          text: _spaceHex(currentClean),
-          style: TextStyle(color: defaultColor),
-        ));
+        spans.add(
+          TextSpan(
+            text: '$numStr: ',
+            style: TextStyle(color: blockNumberColor),
+          ),
+        );
+        spans.add(
+          TextSpan(
+            text: _spaceHex(currentClean),
+            style: TextStyle(color: defaultColor),
+          ),
+        );
         continue;
       }
 
@@ -1613,27 +1752,35 @@ class DumpEditorState extends State<DumpEditor> {
       // clear which card the row belongs to. Changed bytes are highlighted.
       String gutter = ' ' * (numStr.length + 2);
 
-      spans.add(TextSpan(
-        text: '$gutter$currentName',
-        style: TextStyle(color: labelColor, fontWeight: FontWeight.bold),
-      ));
+      spans.add(
+        TextSpan(
+          text: '$gutter$currentName',
+          style: TextStyle(color: labelColor, fontWeight: FontWeight.bold),
+        ),
+      );
       spans.add(const TextSpan(text: '\n'));
-      spans.add(TextSpan(
-        text: '$numStr: ',
-        style: TextStyle(color: blockNumberColor),
-      ));
+      spans.add(
+        TextSpan(
+          text: '$numStr: ',
+          style: TextStyle(color: blockNumberColor),
+        ),
+      );
       spans.addAll(_byteSpans(currentClean, byteDiff, byteCount));
 
       spans.add(const TextSpan(text: '\n'));
-      spans.add(TextSpan(
-        text: '$gutter$otherName',
-        style: TextStyle(color: labelColor, fontWeight: FontWeight.bold),
-      ));
+      spans.add(
+        TextSpan(
+          text: '$gutter$otherName',
+          style: TextStyle(color: labelColor, fontWeight: FontWeight.bold),
+        ),
+      );
       spans.add(const TextSpan(text: '\n'));
-      spans.add(TextSpan(
-        text: '$numStr: ',
-        style: TextStyle(color: blockNumberColor),
-      ));
+      spans.add(
+        TextSpan(
+          text: '$numStr: ',
+          style: TextStyle(color: blockNumberColor),
+        ),
+      );
       spans.addAll(_byteSpans(otherClean, byteDiff, byteCount));
     }
 
@@ -1677,7 +1824,8 @@ class DumpEditorState extends State<DumpEditor> {
         ),
         Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).inputDecorationTheme.fillColor ??
+            color:
+                Theme.of(context).inputDecorationTheme.fillColor ??
                 (Theme.of(context).brightness == Brightness.dark
                     ? Colors.grey.shade800
                     : Colors.grey.shade100),
@@ -1706,37 +1854,57 @@ class DumpEditorState extends State<DumpEditor> {
 
     if (isUltralight) {
       legendItems = [
-        _buildLegendItem(localizations.uid,
-            MifareUltralightDumpHighlighter.getUidColor(context)),
-        _buildLegendItem(localizations.bcc,
-            MifareUltralightDumpHighlighter.getBccColor(context)),
-        _buildLegendItem(localizations.lock_bytes,
-            MifareUltralightDumpHighlighter.getLockColor(context)),
-        _buildLegendItem(localizations.password,
-            MifareUltralightDumpHighlighter.getPasswordColor(context)),
         _buildLegendItem(
-            localizations.block_index,
-            Theme.of(context).brightness == Brightness.dark
-                ? Colors.grey.shade400
-                : Colors.grey.shade600),
+          localizations.uid,
+          MifareUltralightDumpHighlighter.getUidColor(context),
+        ),
+        _buildLegendItem(
+          localizations.bcc,
+          MifareUltralightDumpHighlighter.getBccColor(context),
+        ),
+        _buildLegendItem(
+          localizations.lock_bytes,
+          MifareUltralightDumpHighlighter.getLockColor(context),
+        ),
+        _buildLegendItem(
+          localizations.password,
+          MifareUltralightDumpHighlighter.getPasswordColor(context),
+        ),
+        _buildLegendItem(
+          localizations.block_index,
+          Theme.of(context).brightness == Brightness.dark
+              ? Colors.grey.shade400
+              : Colors.grey.shade600,
+        ),
       ];
     } else {
       legendItems = [
-        _buildLegendItem(localizations.uid,
-            MifareClassicDumpHighlighter.getUidColor(context)),
-        _buildLegendItem(localizations.value_block,
-            MifareClassicDumpHighlighter.getValueBlockColor(context)),
-        _buildLegendItem("${localizations.key} A",
-            MifareClassicDumpHighlighter.getKeyAColor(context)),
-        _buildLegendItem("${localizations.key} B",
-            MifareClassicDumpHighlighter.getKeyBColor(context)),
-        _buildLegendItem(localizations.access_conditions,
-            MifareClassicDumpHighlighter.getAccessConditionsColor(context)),
         _buildLegendItem(
-            localizations.block_index,
-            Theme.of(context).brightness == Brightness.dark
-                ? Colors.grey.shade400
-                : Colors.grey.shade600),
+          localizations.uid,
+          MifareClassicDumpHighlighter.getUidColor(context),
+        ),
+        _buildLegendItem(
+          localizations.value_block,
+          MifareClassicDumpHighlighter.getValueBlockColor(context),
+        ),
+        _buildLegendItem(
+          "${localizations.key} A",
+          MifareClassicDumpHighlighter.getKeyAColor(context),
+        ),
+        _buildLegendItem(
+          "${localizations.key} B",
+          MifareClassicDumpHighlighter.getKeyBColor(context),
+        ),
+        _buildLegendItem(
+          localizations.access_conditions,
+          MifareClassicDumpHighlighter.getAccessConditionsColor(context),
+        ),
+        _buildLegendItem(
+          localizations.block_index,
+          Theme.of(context).brightness == Brightness.dark
+              ? Colors.grey.shade400
+              : Colors.grey.shade600,
+        ),
       ];
     }
 
@@ -1786,11 +1954,7 @@ class DumpEditorState extends State<DumpEditor> {
             ],
           ),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 16,
-            runSpacing: 8,
-            children: legendItems,
-          ),
+          Wrap(spacing: 16, runSpacing: 8, children: legendItems),
         ],
       ),
     );
@@ -1857,10 +2021,7 @@ class DumpEditorState extends State<DumpEditor> {
           ),
         ),
         const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(color: _getDefaultHighlightColor()),
-        ),
+        Text(label, style: TextStyle(color: _getDefaultHighlightColor())),
       ],
     );
   }
@@ -1916,8 +2077,9 @@ class DumpEditorState extends State<DumpEditor> {
                     controllers.length,
                     (index) => Center(
                       child: ConstrainedBox(
-                        constraints:
-                            BoxConstraints(maxWidth: isUltralight ? 145 : 395),
+                        constraints: BoxConstraints(
+                          maxWidth: isUltralight ? 145 : 395,
+                        ),
                         child: _buildEditor(index),
                       ),
                     ),
@@ -1969,6 +2131,13 @@ class DumpEditorState extends State<DumpEditor> {
                           child: Text(localizations.value),
                         ),
                       ],
+                      if (widget.cardSave.tag == TagType.mifare1K ||
+                          widget.cardSave.tag == TagType.mifare4K)
+                        ElevatedButton.icon(
+                          onPressed: _showDynamicBadgeAnalysis,
+                          icon: const Icon(Icons.analytics_outlined),
+                          label: Text(localizations.dynamic_badge_action),
+                        ),
                       ElevatedButton.icon(
                         onPressed: _startCompare,
                         label: Text(localizations.compare),

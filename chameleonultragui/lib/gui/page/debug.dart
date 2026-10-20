@@ -44,7 +44,7 @@ class DebugPage extends StatelessWidget {
                 ),
               ),
               const Text(
-                '🐞 Chameleon Ultra GUI DEBUG MENU 🐞',
+                '🐞 NLC Toolkit DEBUG MENU 🐞',
                 textScaler: TextScaler.linear(2),
               ),
               Text(

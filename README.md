@@ -1,103 +1,75 @@
-# Chameleon Ultra GUI
-A GUI for the Chameleon Ultra/Chameleon Lite written in Flutter for cross platform operation
+# NLC Toolkit
 
-[![Auto build](https://github.com/GameTec-live/ChameleonUltraGUI/actions/workflows/build-app.yml/badge.svg)](https://github.com/GameTec-live/ChameleonUltraGUI/actions/workflows/build-app.yml) 
-[![Open collective](https://opencollective.com/chameleon-ultra-gui/tiers/badge.svg)](https://opencollective.com/chameleon-ultra-gui#support)
-[![Crowdin](https://badges.crowdin.net/chameleonultragui/localized.svg)](https://crowdin.com/project/chameleonultragui)
+Application Flutter pour Android, iOS et ordinateur (Windows, Linux, macOS), destinée au **ChameleonUltra V2**. Le parcours principal met la **lecture** et l’**écriture** de cartes au premier plan. Les outils spécialisés sont regroupés dans un **mode avancé**.
 
-### [Full documentation here](https://github.com/GameTec-live/ChameleonUltraGUI/tree/main/docs)
+NLC Toolkit est un dérivé de [Chameleon Ultra GUI](https://github.com/GameTec-live/ChameleonUltraGUI). [MIFARE Classic Tool (MCT)](https://github.com/ikarus23/MifareClassicTool) sert de référence pour l’évolution des fonctions MIFARE Classic. Le code présent ne couvre pas encore toutes les fonctions de MCT, et la compatibilité avec un ChameleonUltra V2 physique reste à valider sur chaque plateforme.
 
-## Installation
+## Parcours principal
 
-#### Windows
+1. Connecter le ChameleonUltra V2 par le moyen proposé sur la plateforme (Bluetooth LE ou USB/série, selon le matériel).
+2. Ouvrir **Lecture** pour détecter une carte et lire les données accessibles. Pour MIFARE Classic, les secteurs protégés nécessitent les clés adaptées.
+3. Examiner et enregistrer le résultat dans **Bibliothèque**.
+4. Ouvrir **Écriture**, choisir un dump MIFARE Classic, un bloc de données et sa clé A ou B, puis présenter la carte cible. L’application demande une confirmation et relit le bloc après l’écriture quand la carte l’autorise.
 
-Download the installer [here](https://github.com/GameTec-live/ChameleonUltraGUI/releases/download/dev/windows-installer.zip)
+L’accueil vérifie le protocole et les commandes nécessaires du micrologiciel avant d’ouvrir la lecture ou l’écriture. L’écriture dépend du type de carte et de la méthode prise en charge par l’appareil. Elle peut modifier définitivement le contenu de la carte cible : utiliser une carte sur laquelle vous êtes autorisé à intervenir et conserver une sauvegarde avant toute écriture.
 
-Or, [portable version](https://github.com/GameTec-live/ChameleonUltraGUI/releases/download/dev/windows.zip)
+## Mode avancé
 
+La base de code contient notamment la gestion des dictionnaires de clés, l’édition et l’import/export de données de cartes, la gestion des emplacements d’émulation du ChameleonUltra, ainsi que des outils de diagnostic et de capture HF/LF. Leur disponibilité dépend du type de carte, du firmware et de la connexion. Les fonctions de MCT qui n’existent pas encore dans ce projet devront être ajoutées et validées individuellement.
 
-#### Linux
+## Dictionnaires de clés MCT
 
-Download the Linux build
+L’application embarque les trois dictionnaires de clés fournis par **MIFARE Classic Tool** : `std.keys` (3 clés), `extended-std.keys` (2 477 clés) et `hotel-std.keys` (24 clés). Ils sont conservés tels quels, avec leurs commentaires de provenance. Le format est une clé MIFARE Classic hexadécimale de 12 caractères par ligne ; les lignes vides et les commentaires commençant par `#` sont ignorés. Les clés des fichiers Standard et Hôtel sont déjà comprises dans le fichier Étendu.
 
-- [Debian-based (.deb)](https://github.com/GameTec-live/ChameleonUltraGUI/releases/download/dev/linux-debian.zip)
-- [Arch-based](https://aur.archlinux.org/packages/chameleonultragui-git)
-- [Other](https://github.com/GameTec-live/ChameleonUltraGUI/releases/download/dev/linux.zip)
-- [Other (legacy, built on Ubuntu 20.04 LTS)](https://github.com/GameTec-live/ChameleonUltraGUI/releases/download/dev/linux-legacy.zip)
-- [Flathub (Not built in our CI, updates may be slower)](https://flathub.org/apps/run.chameleon.chameleonultragui)
+Ces fichiers proviennent du [dépôt officiel de MCT](https://github.com/ikarus23/MifareClassicTool/tree/b52568c8f274968ded8a7a4bf6f3a067419b63ed/Mifare%20Classic%20Tool/app/src/main/assets/key-files), au commit `b52568c8f274968ded8a7a4bf6f3a067419b63ed`. Voir leur [notice d’attribution](chameleonultragui/assets/dictionaries/mct/NOTICE.md) et la [licence GPLv3](LICENSE).
 
-#### macOS / iOS / iPadOS
+Au premier lancement après l’installation ou la mise à jour, NLC Toolkit les ajoute dans **Bibliothèque → Dictionnaires → MIFARE Classic Tool** sans remplacer les dictionnaires personnels. Pour une carte MIFARE Classic, **Lire → Fonctions avancées → Clés** propose **MCT · Standard** par défaut ; **MCT · Étendu** et **MCT · Hôtel** peuvent être choisis dans la liste. Le dictionnaire Étendu peut rendre la vérification des clés sensiblement plus longue.
 
-Download it from Apple App Store: [Chameleon Ultra GUI](https://apps.apple.com/app/chameleon-ultra-gui/id6462919364)
+## Analyse des données dynamiques
 
-Or, you can join TestFlight to get builds earlier: [Chameleon Ultra GUI - TestFlight](https://testflight.apple.com/join/UgwgfMqo)
+Dans **Voir le dump**, l’option **Analyser les données dynamiques** examine les dumps MIFARE Classic 1K et 4K. Elle relève des empreintes textuelles, des clés connues présentes dans les trailers et des [blocs de valeur MIFARE](https://www.nxp.com/docs/en/data-sheet/MF1S50YYX_V1.pdf). Un second dump enregistré du même UID peut être sélectionné pour repérer les blocs de données modifiés entre deux lectures.
 
-#### Android
+Ces indices ne prouvent pas à eux seuls un code tournant, une connexion GSM ou le comportement d’une centrale d’accès. Deux dumps identiques ne prouvent pas non plus l’absence de protection. L’application remplace parfois un bloc non lu par seize octets `00` ; l’analyse différentielle écarte donc les blocs nuls ou absents et signale les comparaisons limitées. Les références aux fabricants sont des profils possibles, pas une identification certifiée. Le module n’affirme jamais qu’une copie sera acceptée.
 
-Download it from Google Play Store: [Chameleon Ultra GUI](https://play.google.com/store/apps/details?id=io.chameleon.ultra)
+## État des fonctions MIFARE Classic
 
-Or, plain [APK](https://github.com/GameTec-live/ChameleonUltraGUI/releases/download/dev/apk.zip) (not signed, incompatible with Google Play version)
+| Fonction | État dans le code |
+| --- | --- |
+| Lire une carte et enregistrer un dump avec des clés connues | Présent |
+| Écrire un bloc de données sur une carte ordinaire avec une clé A/B, puis relire ce bloc | Présent |
+| Écrire un dump complet sur une carte Magic compatible | Avancé |
+| Gérer les dictionnaires, éditer et comparer les dumps, interpréter les conditions d’accès et les blocs de valeur | Avancé |
+| Rechercher des indices de données dynamiques et comparer deux dumps MIFARE Classic du même UID | Avancé |
+| Calculer un BCC et exporter un dump au format texte MCT | Avancé |
+| Formater une carte vers son état de livraison et lancer un clonage rapide de l’UID depuis l’application | À réaliser |
 
-#### Pending stores:
-- F-Store: not yet
-- Chocolatey (Windows): not yet
+La lecture et l’écriture avec un ChameleonUltra V2 réel doivent encore être validées sur Android, iOS et ordinateur.
 
-Note: Under some Linux systems, especially ones running KDE desktop environments, you may need to install the `zenity` package for the file picker to work correctly.
+## Développement
 
-Key:
-- apk: Android APK, download and install either via ADB or your app/file manager of choice
-- linux: zip file containing the linux build, either run the binary manually or install using cmake
-- linux-legacy: same as `linux`, but built on Ubuntu 20.04 LTS. Suited for users on old glibc
-- linux-debian: Debian Auto Packaging, download and install with dpkg or apt
-- windows: zip file containing windows build, run the binary manually
-- windows-installer: NSIS based Windows Installer, Installs the Windows build and creates Shortcuts
+Le projet Flutter se trouve dans `chameleonultragui/`. Installer une version de Flutter et de Dart compatible avec [`pubspec.yaml`](chameleonultragui/pubspec.yaml), puis lancer depuis la racine du dépôt :
 
-#### Note for Linux users:
-You might need to add your user to the `dialout` or, on Arch Linux, to the `uucp` group for the app to talk to the device. If your user is not in this group, you may get serial or permission errors.
-It is also highly recommended to either uninstall or disable ModemManager (`sudo systemctl disable --now modemmanager`) as many distros ship ModemManager and it may interfere with communication.
+```sh
+cd chameleonultragui
+flutter pub get
+flutter devices
+flutter run -d DEVICE_ID
+```
 
-## Buy a Chameleon Ultra
-- [Sneak Tech](https://sneaktechnology.com/product/chameleon-ultra/)
-- [KSEC](https://labs.ksec.co.uk/product/proxgrind-chameleon-ultra/)
-- [Lab401](https://lab401.com/products/chameleon-ultra)
+La compilation iOS et macOS nécessite un environnement Apple adapté. Les identifiants natifs Android, iOS, macOS et GTK utilisent provisoirement `com.nfclinkcard.nlctoolkit` ; cela ne réserve aucun nom dans les boutiques d'applications. Les exécutables Windows et Linux s'appellent `nlc_toolkit`. La publication nécessite des comptes, certificats et secrets propres à NLC Toolkit. Le workflow de publication est manuel et reste inactif tant que la variable `NLC_PUBLISH_ENABLED` n'est pas définie à `true`. Le nom du package Flutter et les recettes AUR/Flatpak restent issus du projet source et devront être adaptés avant leur distribution sous le nom NLC Toolkit. Les anciennes pages de [documentation du projet source](https://github.com/GameTec-live/ChameleonUltraGUI/tree/main/docs) décrivent Chameleon Ultra GUI et ses versions publiées, pas une version publiée de NLC Toolkit.
 
-## Contributing
-Contributions are welcome, most stuff that needs to be done can either be found in our [issues](https://github.com/GameTec-live/ChameleonUltraGUI/issues) or on the [Project board](https://github.com/users/GameTec-live/projects/2)
+## Version Windows portable
 
-### Special thanks to [St.Ricky](https://github.com/Saint-Ricky) for designing the App icons
+Depuis la racine du dépôt, générer une archive contenant l'exécutable et ses dépendances :
 
-## Translations
+```powershell
+pwsh -File chameleonultragui/tool/package_windows.ps1
+```
 
-If you want to collaborate by adding your language to the application, you can do it through [our Crowdin project](https://crowdin.com/project/chameleonultragui). Do not contribute files into `chameleonultragui/lib/l10n/app_*.arb`. All translations should be added only to Crowdin. If your language is missing, you can create issue and ask to enable it. "Chameleon Ultra GUI", "Chameleon" and other trademarks should not be translated.
+Décompresser l'archive créée dans `chameleonultragui/dist/` avant de lancer `nlc_toolkit.exe`. Brancher le ChameleonUltra V2 en USB, puis le sélectionner dans **Connexion**. Si la détection automatique ne le trouve pas, choisir son port COM avec **Connexion manuelle**. Le Bluetooth du PC n'est pas encore pris en charge dans la version Windows.
 
-## Screenshots
-![Connect Page](/screenshots/1.png)
-![Home Page](/screenshots/2.png)
-![Home Page Settings](/screenshots/3.png)
-![Slot Manager Page](/screenshots/4.png)
-![Slot Manager Saved Cards](/screenshots/5.png)
-![Saved Cards Page](/screenshots/6.png)
-![Read Card Page](/screenshots/7.png)
-![Read Card Page Mifare Classic](/screenshots/8.png)
+## Origine et licence
 
-## Donate
-You want to support us and donate? Thank you, you make it possible for us to keep this app free and make it easier to publish this app on the Apple App Store.
+NLC Toolkit reprend le code de **Chameleon Ultra GUI** et conserve l’attribution de ses auteurs et contributeurs. Les icônes d’origine ont été conçues par [St.Ricky](https://github.com/Saint-Ricky). **MIFARE Classic Tool** est une référence fonctionnelle distincte ; ce dépôt ne prétend ni être sa version multiplateforme ni offrir aujourd’hui une équivalence complète.
 
-You have the following options:
-
-Open Collective: [Chameleon Ultra GUI](https://opencollective.com/chameleon-ultra-gui)
-
-Crypto Currencies if your into that jam (Although open collective is preferred):
-- BTC: bc1qrcd4ctxagaxsetyhpzc08d2upl0mh498gp3lkl
-- ETH: 0x0f20e505E9e534236dF4390DcFfD5C4A03C0eec7
-
-
-## Star History
-
-<a href="https://star-history.dera.page/#GameTec-live/ChameleonUltraGUI&type=date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=GameTec-live/ChameleonUltraGUI&type=Timeline&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=GameTec-live/ChameleonUltraGUI&type=Timeline" />
-    <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=GameTec-live/ChameleonUltraGUI&type=Timeline" />
-  </picture>
-</a>
+Ce dépôt est distribué sous [GNU GPL version 3](LICENSE). Les avis de droits d’auteur existants et le texte de la licence sont conservés.

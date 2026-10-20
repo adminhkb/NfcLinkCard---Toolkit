@@ -105,9 +105,18 @@ CardSave flipperNfcToCardSave(String data) {
 
 CardSave mctToCardSave(String data) {
   final String id = const Uuid().v4();
-  final String uid = data.split("\n")[1].substring(0, 8);
-  final int sak = hexToBytes(data.split("\n")[1].substring(10, 12))[0];
-  String atqaString = data.split("\n")[1].substring(12, 16);
+  final List<String> blocks = data
+      .split(RegExp(r'\r?\n'))
+      .map((line) => line.trim())
+      .where((line) => line.isNotEmpty && !line.startsWith('+Sector:'))
+      .toList();
+  if (blocks.isEmpty ||
+      !RegExp(r'^[0-9A-Fa-f]{32}$').hasMatch(blocks.first)) {
+    throw const FormatException('MCT dump has no readable manufacturer block');
+  }
+  final String uid = blocks.first.substring(0, 8);
+  final int sak = hexToBytes(blocks.first.substring(10, 12))[0];
+  String atqaString = blocks.first.substring(12, 16);
   final List<int> atqa = [
     int.parse(atqaString.substring(2), radix: 16),
     int.parse(atqaString.substring(0, 2), radix: 16)
@@ -117,23 +126,17 @@ CardSave mctToCardSave(String data) {
   const Color color = Colors.deepOrange;
   final TagType tag;
   List<Uint8List> tagData = [];
-  List<String> blocks = [];
-  for (var block in data.split("\n")) {
-    if (!block.startsWith("+Sector")) {
-      blocks.add(block.trim());
-    }
-  }
-
-  //Check if a block has more than 16 Bytes, Ultralight, return as unknown
-  if (blocks[0].replaceAll(' ', '').length > 32) {
-    tag = TagType.unknown;
-  } else {
-    tag = mfClassicGetChameleonTagType(
-        mfClassicGetCardTypeByBlockCount(blocks.length));
-  }
+  tag = mfClassicGetChameleonTagType(
+      mfClassicGetCardTypeByBlockCount(blocks.length));
 
   for (var block in blocks) {
-    tagData.add(hexToBytes(block));
+    if (block == '--------------------------------') {
+      tagData.add(Uint8List(0));
+    } else if (RegExp(r'^[0-9A-Fa-f]{32}$').hasMatch(block)) {
+      tagData.add(hexToBytes(block));
+    } else {
+      throw const FormatException('Invalid MCT block');
+    }
   }
 
   return CardSave(
@@ -146,6 +149,42 @@ CardSave mctToCardSave(String data) {
       color: color,
       ats: Uint8List.fromList(ats),
       atqa: Uint8List.fromList(atqa));
+}
+
+/// Exports a four-byte-UID MIFARE Classic dump using MCT sector headers.
+/// Unread blocks keep MCT's no-data marker instead of becoming zeroed data.
+String cardSaveToMct(CardSave card) {
+  if (!isMifareClassic(card.tag)) {
+    throw const FormatException('Only MIFARE Classic dumps can be exported');
+  }
+  final uid = card.uid.replaceAll(RegExp(r'\s+'), '');
+  if (!RegExp(r'^[0-9A-Fa-f]{8}$').hasMatch(uid) ||
+      card.data.isEmpty ||
+      card.data.first.length != 16) {
+    throw const FormatException('MCT export needs a readable 4-byte UID block');
+  }
+
+  final type = chameleonTagTypeGetMfClassicType(card.tag);
+  final isEV1 = chameleonTagSaveCheckForMifareClassicEV1(card);
+  final sectorCount = mfClassicGetSectorCount(type, isEV1: isEV1);
+  final lines = <String>[];
+  for (var sector = 0; sector < sectorCount; sector++) {
+    lines.add('+Sector: $sector');
+    final firstBlock = mfClassicGetFirstBlockCountBySector(sector);
+    final blockCount = mfClassicGetBlockCountBySector(sector);
+    for (var offset = 0; offset < blockCount; offset++) {
+      final index = firstBlock + offset;
+      final block = index < card.data.length ? card.data[index] : Uint8List(0);
+      if (block.length == 16) {
+        lines.add(bytesToHex(block).toUpperCase());
+      } else if (block.isEmpty) {
+        lines.add('--------------------------------');
+      } else {
+        throw FormatException('Invalid MIFARE Classic block $index');
+      }
+    }
+  }
+  return lines.join('\n');
 }
 
 CardSave flipperRfidToCardSave(String data) {

@@ -63,7 +63,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: windows-installer
-          path: chameleonultragui-setup-win.exe
+          path: nlc-toolkit-setup-win.exe
 
   build-linux:
     needs: check
@@ -157,7 +157,7 @@ jobs:
       contents: write
     name: Create dev pre-release with artifacts
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     needs:
       - build-android
       - build-windows

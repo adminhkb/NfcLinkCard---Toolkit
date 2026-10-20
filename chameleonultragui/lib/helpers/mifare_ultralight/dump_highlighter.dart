@@ -28,7 +28,7 @@ class MifareUltralightDumpHighlighter {
   }
 
   static Color getDefaultColor(BuildContext context) {
-    return Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    return Theme.of(context).colorScheme.onSurface;
   }
 
   static List<TextSpan> highlightBlock(String blockData, int blockNumber,

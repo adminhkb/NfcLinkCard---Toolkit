@@ -63,8 +63,12 @@ if (WIN32)
 
   add_custom_command(
     TARGET recovery POST_BUILD
-    COMMAND ../../../src/post_build.bat $<CONFIG> $<TARGET_FILE_DIR:recovery>
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+            "${CMAKE_BINARY_DIR}/runner/$<CONFIG>"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:recovery>"
+            "${CMAKE_BINARY_DIR}/runner/$<CONFIG>/recovery.dll"
+    VERBATIM
   )
 
   include(FetchContent)

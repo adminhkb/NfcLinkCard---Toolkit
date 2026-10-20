@@ -59,3 +59,5 @@ android/fastlane/report.xml
 # Translation
 untranslated_messages.json
 lib/generated/i18n/
+# Local release packages (APK, Windows zips)
+/dist/

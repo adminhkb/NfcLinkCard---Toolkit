@@ -1,4 +1,3 @@
-import 'package:chameleonultragui/gui/component/card_button.dart';
 import 'package:chameleonultragui/gui/component/mifare/classic.dart';
 import 'package:chameleonultragui/gui/component/error_message.dart';
 import 'package:chameleonultragui/gui/component/mifare/ultralight.dart';
@@ -13,6 +12,7 @@ import 'package:chameleonultragui/connector/serial_abstract.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
 import 'dart:async';
 
 // Localizations
@@ -26,7 +26,7 @@ enum MifareClassicState {
   recoveryOngoing,
   dump,
   dumpOngoing,
-  save
+  save,
 }
 
 // cardExist true because we don't show error to user if nothing is done
@@ -39,14 +39,15 @@ class HFCardInfo {
   TagType type;
   bool cardExist;
 
-  HFCardInfo(
-      {this.uid = '',
-      this.sak = '',
-      this.atqa = '',
-      this.tech = '',
-      this.ats = '',
-      this.type = TagType.unknown,
-      this.cardExist = true});
+  HFCardInfo({
+    this.uid = '',
+    this.sak = '',
+    this.atqa = '',
+    this.tech = '',
+    this.ats = '',
+    this.type = TagType.unknown,
+    this.cardExist = true,
+  });
 }
 
 class LFCardInfo {
@@ -130,7 +131,7 @@ class ReadCardPageState extends State<ReadCardPage> {
     card ??= await appState.communicator!.readPac();
     card ??= await appState.communicator!.readIoProx();
 
-
+    if (!mounted) return;
     if (card != null) {
       setState(() {
         lfInfo.card = card;
@@ -149,6 +150,9 @@ class ReadCardPageState extends State<ReadCardPage> {
 
     setState(() {
       isContinuousHFScan = true;
+      hfInfo = HFCardInfo();
+      mfcInfo = MifareClassicInfo();
+      mfuInfo = MifareUltralightInfo();
     });
 
     const scanInterval = Duration(seconds: 2);
@@ -163,6 +167,7 @@ class ReadCardPageState extends State<ReadCardPage> {
       }
 
       var info = await readHFInfo(context, updateMifareClassicRecovery);
+      if (!mounted || !isContinuousHFScan) return;
       setState(() {
         hfInfo = info.$1;
         mfcInfo = info.$2;
@@ -175,6 +180,7 @@ class ReadCardPageState extends State<ReadCardPage> {
     });
 
     var info = await readHFInfo(context, updateMifareClassicRecovery);
+    if (!mounted || !isContinuousHFScan) return;
     setState(() {
       hfInfo = info.$1;
       mfcInfo = info.$2;
@@ -204,6 +210,7 @@ class ReadCardPageState extends State<ReadCardPage> {
 
     setState(() {
       isContinuousLFScan = true;
+      lfInfo = LFCardInfo();
     });
 
     const scanInterval = Duration(seconds: 2);
@@ -218,6 +225,7 @@ class ReadCardPageState extends State<ReadCardPage> {
       }
 
       await readLFInfo();
+      if (!mounted || !isContinuousLFScan) return;
 
       if (lfInfo.cardExist && lfInfo.card != null) {
         stopContinuousLFScan();
@@ -225,6 +233,7 @@ class ReadCardPageState extends State<ReadCardPage> {
     });
 
     await readLFInfo();
+    if (!mounted || !isContinuousLFScan) return;
     if (lfInfo.cardExist && lfInfo.card != null) {
       stopContinuousLFScan();
     }
@@ -245,8 +254,8 @@ class ReadCardPageState extends State<ReadCardPage> {
 
   @override
   void dispose() {
-    stopContinuousHFScan();
-    stopContinuousLFScan();
+    hfScanTimer?.cancel();
+    lfScanTimer?.cancel();
     super.dispose();
   }
 
@@ -255,22 +264,24 @@ class ReadCardPageState extends State<ReadCardPage> {
     var localizations = AppLocalizations.of(context)!;
 
     var tags = appState.sharedPreferencesProvider.getCards();
-    tags.add(CardSave(
-      uid: hfInfo.uid,
-      sak: hexToBytes(hfInfo.sak)[0],
-      atqa: hexToBytes(hfInfo.atqa),
-      name: dumpName,
-      tag: hfInfo.type != TagType.unknown ? hfInfo.type : TagType.mifare1K,
-      data: [],
-      ats: (hfInfo.ats != localizations.no)
-          ? hexToBytes(hfInfo.ats)
-          : Uint8List(0),
-      extraData: CardSaveExtra(
-        ultralightSignature: mfuInfo.signature,
-        ultralightVersion: mfuInfo.version,
-        ultralightCounters: [],
+    tags.add(
+      CardSave(
+        uid: hfInfo.uid,
+        sak: hexToBytes(hfInfo.sak)[0],
+        atqa: hexToBytes(hfInfo.atqa),
+        name: dumpName,
+        tag: hfInfo.type != TagType.unknown ? hfInfo.type : TagType.mifare1K,
+        data: [],
+        ats: (hfInfo.ats != localizations.no)
+            ? hexToBytes(hfInfo.ats)
+            : Uint8List(0),
+        extraData: CardSaveExtra(
+          ultralightSignature: mfuInfo.signature,
+          ultralightVersion: mfuInfo.version,
+          ultralightCounters: [],
+        ),
       ),
-    ));
+    );
 
     appState.sharedPreferencesProvider.setCards(tags);
   }
@@ -279,718 +290,685 @@ class ReadCardPageState extends State<ReadCardPage> {
     var appState = Provider.of<ChameleonGUIState>(context, listen: false);
 
     var tags = appState.sharedPreferencesProvider.getCards();
-    tags.add(CardSave(
-        uid: lfInfo.card.toString(), name: dumpName, tag: lfInfo.card!.type));
+    tags.add(
+      CardSave(
+        uid: lfInfo.card.toString(),
+        name: dumpName,
+        tag: lfInfo.card!.type,
+      ),
+    );
     appState.sharedPreferencesProvider.setCards(tags);
   }
 
-  Widget buildFieldRow(String label, String value, double fontSize) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Text(
-        '$label: $value',
-        textAlign: (MediaQuery.of(context).size.width < 800)
-            ? TextAlign.left
-            : TextAlign.center,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: fontSize,
-        ),
+  bool _readHighFrequency = true;
+
+  Future<void> _showUnsupportedDevice(AppLocalizations localizations) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(localizations.no_supported),
+        content: Text(localizations.lite_no_read),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(localizations.ok),
+          ),
+        ],
       ),
+    );
+  }
+
+  Future<bool> _canRead(
+    ChameleonGUIState appState,
+    AppLocalizations localizations,
+  ) async {
+    if (appState.connector?.device == ChameleonDevice.ultra) {
+      return true;
+    }
+    if (appState.connector?.device == ChameleonDevice.lite) {
+      await _showUnsupportedDevice(localizations);
+    } else {
+      appState.changesMade();
+    }
+    return false;
+  }
+
+  Future<void> _readSelectedCard(
+    ChameleonGUIState appState,
+    AppLocalizations localizations,
+  ) async {
+    if (!await _canRead(appState, localizations) || !mounted) return;
+    setState(() {
+      scanInProgress = true;
+      if (_readHighFrequency) {
+        hfInfo = HFCardInfo();
+        mfcInfo = MifareClassicInfo();
+        mfuInfo = MifareUltralightInfo();
+      } else {
+        lfInfo = LFCardInfo();
+      }
+    });
+    try {
+      if (_readHighFrequency) {
+        final info = await readHFInfo(context, updateMifareClassicRecovery);
+        if (!mounted) return;
+        setState(() {
+          hfInfo = info.$1;
+          mfcInfo = info.$2;
+          mfuInfo = info.$3;
+        });
+      } else {
+        await readLFInfo();
+      }
+    } finally {
+      if (mounted) setState(() => scanInProgress = false);
+    }
+  }
+
+  Future<void> _toggleContinuousScan(
+    ChameleonGUIState appState,
+    AppLocalizations localizations,
+  ) async {
+    if (_readHighFrequency && isContinuousHFScan) {
+      stopContinuousHFScan();
+      return;
+    }
+    if (!_readHighFrequency && isContinuousLFScan) {
+      stopContinuousLFScan();
+      return;
+    }
+    if (!await _canRead(appState, localizations) || !mounted) return;
+    if (_readHighFrequency) {
+      await startContinuousHFScan();
+    } else {
+      await startContinuousLFScan();
+    }
+  }
+
+  void _selectFrequency(bool highFrequency) {
+    if (scanInProgress || _readHighFrequency == highFrequency) return;
+    if (isContinuousHFScan) stopContinuousHFScan();
+    if (isContinuousLFScan) stopContinuousLFScan();
+    setState(() => _readHighFrequency = highFrequency);
+  }
+
+  Future<void> _showSaveDialog(
+    bool highFrequency,
+    AppLocalizations localizations,
+  ) async {
+    var name = dumpName;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(localizations.enter_name_of_card),
+        content: TextField(autofocus: true, onChanged: (value) => name = value),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(localizations.cancel),
+          ),
+          FilledButton(
+            onPressed: () async {
+              dumpName = name;
+              if (highFrequency) {
+                await saveHFCard();
+              } else {
+                await saveLFCard();
+              }
+              if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+            },
+            child: Text(localizations.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showCardTypeDialog(
+    ChameleonGUIState appState,
+    AppLocalizations localizations,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(localizations.override_card_type),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(localizations.override_card_type_description),
+            const SizedBox(height: 16),
+            DropdownButton<TagType>(
+              isExpanded: true,
+              value: hfInfo.type,
+              items:
+                  [
+                    ...getTagTypesByFrequency(TagFrequency.hf),
+                    TagType.unknown,
+                  ].map((tagType) {
+                    return DropdownMenuItem<TagType>(
+                      value: tagType,
+                      child: Text(chameleonTagToString(tagType, localizations)),
+                    );
+                  }).toList(),
+              onChanged: (newValue) async {
+                if (newValue == null) return;
+                setState(() {
+                  hfInfo.type = newValue;
+                  hfInfo.tech = chameleonTagToString(newValue, localizations);
+                });
+
+                if (isMifareClassic(newValue)) {
+                  final info = await performMifareClassicScan(
+                    appState.communicator!,
+                    mfcInfo,
+                    context,
+                    updateMifareClassicRecovery,
+                    override: newValue,
+                  );
+                  if (mounted) setState(() => mfcInfo = info.$2);
+                } else if (isMifareUltralight(newValue)) {
+                  final info = await performMifareUltralightScan(
+                    appState.communicator!,
+                    mfuInfo,
+                    override: newValue,
+                  );
+                  if (mounted) setState(() => mfuInfo = info.$2);
+                }
+
+                if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(localizations.cancel),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _technicalRow(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 82,
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Expanded(
+            child: SelectableText(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResult(
+    BuildContext context,
+    ChameleonGUIState appState,
+    AppLocalizations localizations,
+    bool french,
+  ) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final highFrequency = _readHighFrequency;
+    final identifier = highFrequency
+        ? hfInfo.uid
+        : lfInfo.card!.toViewableString();
+    final type = highFrequency
+        ? hfInfo.tech
+        : chameleonTagToString(lfInfo.card!.type, localizations);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ReadPanel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.check_circle_rounded, color: colors.primary),
+                  const SizedBox(width: 9),
+                  Text(
+                    french ? 'Carte détectée' : 'Card detected',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: colors.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 15),
+              Text(
+                type,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: colors.onSurface,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                localizations.uid.toUpperCase(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  letterSpacing: 1.3,
+                ),
+              ),
+              const SizedBox(height: 5),
+              SelectableText(
+                identifier,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.w600,
+                  color: colors.onSurface,
+                ),
+              ),
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                onPressed: () => _showSaveDialog(highFrequency, localizations),
+                icon: const Icon(Icons.bookmark_add_outlined),
+                label: Text(
+                  highFrequency
+                      ? localizations.save_only_uid
+                      : localizations.save,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        _ReadPanel(
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: const EdgeInsets.only(bottom: 7),
+            title: Text(
+              french ? 'Détails techniques' : 'Technical details',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: colors.onSurface,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            leading: Icon(Icons.data_object_rounded, color: colors.primary),
+            children: [
+              _technicalRow(context, localizations.uid, identifier),
+              if (highFrequency) ...[
+                _technicalRow(context, localizations.sak, hfInfo.sak),
+                _technicalRow(context, localizations.atqa, hfInfo.atqa),
+                _technicalRow(context, localizations.ats, hfInfo.ats),
+                if (mfcInfo.ntLevel != null)
+                  _technicalRow(
+                    context,
+                    localizations.prng_type,
+                    mfClassicGetPrngType(mfcInfo.ntLevel!, localizations),
+                  ),
+                if (mfcInfo.hasBackdoor != null)
+                  _technicalRow(
+                    context,
+                    localizations.has_backdoor_support,
+                    mfcInfo.hasBackdoor! ? localizations.yes : localizations.no,
+                  ),
+              ],
+              _technicalRow(context, localizations.card_tech, type),
+            ],
+          ),
+        ),
+        if (highFrequency) ...[
+          const SizedBox(height: 14),
+          _ReadPanel(
+            child: ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: const EdgeInsets.only(bottom: 8),
+              maintainState: true,
+              title: Text(
+                french ? 'Fonctions avancées' : 'Advanced functions',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: colors.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              subtitle: Text(
+                french
+                    ? 'Type de carte, clés et données'
+                    : 'Card type, keys and data',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+              leading: Icon(Icons.tune_rounded, color: colors.primary),
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () =>
+                        _showCardTypeDialog(appState, localizations),
+                    icon: const Icon(Icons.edit_outlined),
+                    label: Text(localizations.override_card_type),
+                  ),
+                ),
+                if (isMifareClassic(hfInfo.type))
+                  MifareClassicHelper(mfcInfo: mfcInfo, hfInfo: hfInfo),
+                if (isMifareUltralight(hfInfo.type))
+                  MifareUltralightHelper(hfInfo: hfInfo),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    var localizations = AppLocalizations.of(context)!;
-    final isSmallScreen = screenSize.width < 800;
-
-    double fieldFontSize = isSmallScreen ? 16 : 20;
-
-    var appState = context.watch<ChameleonGUIState>();
+    final localizations = AppLocalizations.of(context)!;
+    final appState = context.watch<ChameleonGUIState>();
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final french = Localizations.localeOf(context).languageCode == 'fr';
+    final continuous = _readHighFrequency
+        ? isContinuousHFScan
+        : isContinuousLFScan;
+    final busy = scanInProgress || continuous;
+    final found = _readHighFrequency
+        ? hfInfo.uid.isNotEmpty
+        : lfInfo.card != null;
+    final noCard = _readHighFrequency ? !hfInfo.cardExist : !lfInfo.cardExist;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(localizations.read_card),
-      ),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Center(
-              child: Card(
-                elevation: 3,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(22, 32, 22, 48),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'NLC TOOLKIT  /  ${french ? 'LECTURE' : 'READ'}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colors.primary,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    localizations.read_card,
+                    style: theme.textTheme.headlineLarge?.copyWith(
+                      color: colors.onSurface,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -1,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    french
+                        ? 'Choisissez une fréquence, puis placez la carte contre le ChameleonUltra V2.'
+                        : 'Choose a frequency, then place the card against the ChameleonUltra V2.',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  Text(
+                    french ? 'Fréquence' : 'Frequency',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: colors.onSurface,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
                     children: [
-                      Text(
-                        localizations.hf_tag_info,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: _FrequencyChoice(
+                          selected: _readHighFrequency,
+                          label: 'HF',
+                          subtitle: '13,56 MHz',
+                          icon: Icons.nfc_rounded,
+                          onTap: scanInProgress
+                              ? null
+                              : () => _selectFrequency(true),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      buildFieldRow(
-                          localizations.uid, hfInfo.uid, fieldFontSize),
-                      buildFieldRow(
-                          localizations.sak, hfInfo.sak, fieldFontSize),
-                      buildFieldRow(
-                          localizations.atqa, hfInfo.atqa, fieldFontSize),
-                      buildFieldRow(
-                          localizations.ats, hfInfo.ats, fieldFontSize),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '${localizations.card_tech}: ${hfInfo.tech}',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: fieldFontSize),
-                          ),
-                          if (hfInfo.uid.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            IconButton(
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      title: Text(
-                                          localizations.override_card_type),
-                                      content: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            localizations
-                                                .override_card_type_description,
-                                            style:
-                                                const TextStyle(fontSize: 14),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          DropdownButton<TagType?>(
-                                            isExpanded: true,
-                                            value: hfInfo.type,
-                                            onChanged:
-                                                (TagType? newValue) async {
-                                              setState(() {
-                                                hfInfo.type = newValue!;
-                                                hfInfo.tech =
-                                                    chameleonTagToString(
-                                                        newValue,
-                                                        localizations);
-                                              });
-
-                                              if (isMifareClassic(newValue!)) {
-                                                var info =
-                                                    await performMifareClassicScan(
-                                                        appState.communicator!,
-                                                        mfcInfo,
-                                                        context,
-                                                        updateMifareClassicRecovery,
-                                                        override: newValue);
-                                                setState(() {
-                                                  mfcInfo = info.$2;
-                                                });
-                                              } else if (isMifareUltralight(
-                                                  newValue)) {
-                                                var info =
-                                                    await performMifareUltralightScan(
-                                                        appState.communicator!,
-                                                        mfuInfo,
-                                                        override: newValue);
-                                                setState(() {
-                                                  mfuInfo = info.$2;
-                                                });
-                                              }
-
-                                              if (context.mounted) {
-                                                Navigator.of(context).pop();
-                                              }
-                                            },
-                                            items: [
-                                              ...[
-                                                ...getTagTypesByFrequency(
-                                                    TagFrequency.hf),
-                                                TagType.unknown
-                                              ].map((TagType tagType) {
-                                                return DropdownMenuItem<
-                                                    TagType?>(
-                                                  value: tagType,
-                                                  child: Text(
-                                                      chameleonTagToString(
-                                                          tagType,
-                                                          localizations)),
-                                                );
-                                              }),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(),
-                                          child: Text(localizations.cancel),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                              },
-                              icon: const Icon(Icons.edit),
-                              iconSize: 20,
-                              padding: const EdgeInsets.all(4),
-                              constraints: const BoxConstraints(
-                                minWidth: 32,
-                                minHeight: 32,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _FrequencyChoice(
+                          selected: !_readHighFrequency,
+                          label: 'LF',
+                          subtitle: '125 kHz',
+                          icon: Icons.sensors_rounded,
+                          onTap: scanInProgress
+                              ? null
+                              : () => _selectFrequency(false),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  _ReadPanel(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 45,
+                              height: 45,
+                              decoration: BoxDecoration(
+                                color: colors.primary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(13),
                               ),
-                              tooltip: localizations.override_card_type,
+                              child: Icon(
+                                Icons.radar_rounded,
+                                color: colors.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    busy
+                                        ? (french
+                                              ? 'Recherche en cours'
+                                              : 'Scanning')
+                                        : (french
+                                              ? 'Prêt à lire'
+                                              : 'Ready to read'),
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          color: colors.onSurface,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    busy
+                                        ? (french
+                                              ? 'Maintenez la carte à proximité de l’appareil.'
+                                              : 'Keep the card close to the device.')
+                                        : (french
+                                              ? 'Lancez une lecture lorsque la carte est en place.'
+                                              : 'Start reading when the card is in place.'),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colors.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
+                        ),
+                        if (busy) ...[
+                          const SizedBox(height: 20),
+                          const LinearProgressIndicator(),
                         ],
-                      ),
-                      const SizedBox(height: 16),
-                      if (isMifareClassic(hfInfo.type)) ...[
-                        if (mfcInfo.ntLevel != null)
-                          buildFieldRow(
-                              localizations.prng_type,
-                              mfClassicGetPrngType(
-                                  mfcInfo.ntLevel!, localizations),
-                              fieldFontSize),
-                        if (mfcInfo.hasBackdoor != null)
-                          buildFieldRow(
-                              localizations.has_backdoor_support,
-                              mfcInfo.hasBackdoor!
-                                  ? localizations.yes
-                                  : localizations.no,
-                              fieldFontSize),
-                        const SizedBox(height: 16),
-                      ],
-                      isSmallScreen
-                          ? Column(
-                              children: [
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: scanInProgress
-                                        ? null
-                                        : () async {
-                                            if (appState.connector!.device ==
-                                                ChameleonDevice.ultra) {
-                                              setState(() {
-                                                scanInProgress = true;
-                                              });
-                                              var info = await readHFInfo(
-                                                  context,
-                                                  updateMifareClassicRecovery);
-                                              setState(() {
-                                                hfInfo = info.$1;
-                                                mfcInfo = info.$2;
-                                                mfuInfo = info.$3;
-                                                scanInProgress = false;
-                                              });
-                                            } else if (appState
-                                                    .connector!.device ==
-                                                ChameleonDevice.lite) {
-                                              showDialog<String>(
-                                                context: context,
-                                                builder:
-                                                    (BuildContext context) =>
-                                                        AlertDialog(
-                                                  title: Text(localizations
-                                                      .no_supported),
-                                                  content: Text(
-                                                      localizations
-                                                          .lite_no_read,
-                                                      style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold)),
-                                                  actions: <Widget>[
-                                                    TextButton(
-                                                      onPressed: () =>
-                                                          Navigator.pop(context,
-                                                              localizations.ok),
-                                                      child: Text(
-                                                          localizations.ok),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            } else {
-                                              appState.changesMade();
-                                            }
-                                          },
-                                    style: customCardButtonStyle(appState),
-                                    child: Text(localizations.read),
-                                  ),
+                        const SizedBox(height: 24),
+                        FilledButton.icon(
+                          onPressed: busy
+                              ? null
+                              : () =>
+                                    _readSelectedCard(appState, localizations),
+                          icon: const Icon(Icons.contactless_rounded),
+                          label: Text(localizations.read),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: scanInProgress
+                              ? null
+                              : () => _toggleContinuousScan(
+                                  appState,
+                                  localizations,
                                 ),
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: isContinuousHFScan
-                                        ? () => stopContinuousHFScan()
-                                        : () async {
-                                            if (appState.connector!.device ==
-                                                ChameleonDevice.ultra) {
-                                              await startContinuousHFScan();
-                                            } else if (appState
-                                                    .connector!.device ==
-                                                ChameleonDevice.lite) {
-                                              showDialog<String>(
-                                                context: context,
-                                                builder:
-                                                    (BuildContext context) =>
-                                                        AlertDialog(
-                                                  title: Text(localizations
-                                                      .no_supported),
-                                                  content: Text(
-                                                      localizations
-                                                          .lite_no_read,
-                                                      style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold)),
-                                                  actions: <Widget>[
-                                                    TextButton(
-                                                      onPressed: () =>
-                                                          Navigator.pop(context,
-                                                              localizations.ok),
-                                                      child: Text(
-                                                          localizations.ok),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            } else {
-                                              appState.changesMade();
-                                            }
-                                          },
-                                    style: customCardButtonStyle(appState),
-                                    child: Text(isContinuousHFScan
-                                        ? localizations.cancel
-                                        : localizations.continuous_scan),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Row(
-                              children: [
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: () async {
-                                      if (appState.connector!.device ==
-                                          ChameleonDevice.ultra) {
-                                        var info = await readHFInfo(context,
-                                            updateMifareClassicRecovery);
-                                        setState(() {
-                                          hfInfo = info.$1;
-                                          mfcInfo = info.$2;
-                                          mfuInfo = info.$3;
-                                        });
-                                      } else if (appState.connector!.device ==
-                                          ChameleonDevice.lite) {
-                                        showDialog<String>(
-                                          context: context,
-                                          builder: (BuildContext context) =>
-                                              AlertDialog(
-                                            title: Text(
-                                                localizations.no_supported),
-                                            content: Text(
-                                                localizations.lite_no_read,
-                                                style: const TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold)),
-                                            actions: <Widget>[
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(
-                                                    context, localizations.ok),
-                                                child: Text(localizations.ok),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      } else {
-                                        appState.changesMade();
-                                      }
-                                    },
-                                    style: customCardButtonStyle(appState),
-                                    child: Text(localizations.read),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: isContinuousHFScan
-                                        ? () => stopContinuousHFScan()
-                                        : () async {
-                                            if (appState.connector!.device ==
-                                                ChameleonDevice.ultra) {
-                                              await startContinuousHFScan();
-                                            } else if (appState
-                                                    .connector!.device ==
-                                                ChameleonDevice.lite) {
-                                              showDialog<String>(
-                                                context: context,
-                                                builder:
-                                                    (BuildContext context) =>
-                                                        AlertDialog(
-                                                  title: Text(localizations
-                                                      .no_supported),
-                                                  content: Text(
-                                                      localizations
-                                                          .lite_no_read,
-                                                      style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold)),
-                                                  actions: <Widget>[
-                                                    TextButton(
-                                                      onPressed: () =>
-                                                          Navigator.pop(context,
-                                                              localizations.ok),
-                                                      child: Text(
-                                                          localizations.ok),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            } else {
-                                              appState.changesMade();
-                                            }
-                                          },
-                                    style: customCardButtonStyle(appState),
-                                    child: Text(isContinuousHFScan
-                                        ? localizations.cancel
-                                        : localizations.continuous_scan),
-                                  ),
-                                ),
-                              ],
-                            ),
-                      if (!hfInfo.cardExist) ...[
-                        const SizedBox(height: 16),
-                        ErrorMessage(errorMessage: localizations.no_card_found)
-                      ],
-                      if (hfInfo.uid != "") ...[
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () async {
-                            await showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  title: Text(localizations.enter_name_of_card),
-                                  content: TextField(
-                                    onChanged: (value) {
-                                      setState(() {
-                                        dumpName = value;
-                                      });
-                                    },
-                                  ),
-                                  actions: [
-                                    ElevatedButton(
-                                      onPressed: () async {
-                                        await saveHFCard();
-                                        if (context.mounted) {
-                                          Navigator.pop(context);
-                                        }
-                                      },
-                                      child: Text(localizations.ok),
-                                    ),
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.pop(
-                                            context); // Close the modal without saving
-                                      },
-                                      child: Text(localizations.cancel),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          },
-                          style: customCardButtonStyle(appState),
-                          child: Text(localizations.save_only_uid),
+                          icon: Icon(
+                            continuous
+                                ? Icons.stop_rounded
+                                : Icons.autorenew_rounded,
+                          ),
+                          label: Text(
+                            continuous
+                                ? localizations.cancel
+                                : localizations.continuous_scan,
+                          ),
                         ),
                       ],
-                      if (isMifareClassic(hfInfo.type))
-                        MifareClassicHelper(mfcInfo: mfcInfo, hfInfo: hfInfo),
-                      if (isMifareUltralight(hfInfo.type))
-                        MifareUltralightHelper(hfInfo: hfInfo)
-                    ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 20),
+                  if (found)
+                    _buildResult(context, appState, localizations, french)
+                  else if (noCard && !busy)
+                    ErrorMessage(errorMessage: localizations.no_card_found)
+                  else if (!busy)
+                    Text(
+                      french
+                          ? 'Le résultat apparaîtra ici après la lecture.'
+                          : 'The result will appear here after reading.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                ],
               ),
             ),
-            Center(
-              child: Card(
-                elevation: 3,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        localizations.lf_tag_info,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReadPanel extends StatelessWidget {
+  const _ReadPanel({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.7)),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _FrequencyChoice extends StatelessWidget {
+  const _FrequencyChoice({
+    required this.selected,
+    required this.label,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final String label;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return Material(
+      color: selected ? colors.primary.withValues(alpha: 0.11) : colors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: selected ? colors.primary : colors.outlineVariant,
+          width: selected ? 1.5 : 1,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 23,
+                color: selected ? colors.primary : colors.onSurfaceVariant,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: colors.onSurface,
+                        fontWeight: FontWeight.w800,
                       ),
-                      const SizedBox(height: 8),
-                      buildFieldRow(
-                          localizations.uid,
-                          lfInfo.card != null
-                              ? lfInfo.card!.toViewableString()
-                              : '',
-                          fieldFontSize),
-                      const SizedBox(height: 16),
-                      Text(
-                        '${localizations.card_tech}: ${(lfInfo.card != null ? chameleonTagToString(lfInfo.card!.type, localizations) : '')}',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: fieldFontSize),
+                    ),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
                       ),
-                      const SizedBox(height: 16),
-                      isSmallScreen
-                          ? Column(
-                              children: [
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: scanInProgress
-                                        ? null
-                                        : () async {
-                                            if (appState.connector!.device ==
-                                                ChameleonDevice.ultra) {
-                                              setState(() {
-                                                scanInProgress = true;
-                                              });
-                                              await readLFInfo();
-                                            } else if (appState
-                                                    .connector!.device ==
-                                                ChameleonDevice.lite) {
-                                              showDialog<String>(
-                                                context: context,
-                                                builder:
-                                                    (BuildContext context) =>
-                                                        AlertDialog(
-                                                  title: Text(localizations
-                                                      .no_supported),
-                                                  content: Text(
-                                                      localizations
-                                                          .lite_no_read,
-                                                      style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold)),
-                                                  actions: <Widget>[
-                                                    TextButton(
-                                                      onPressed: () =>
-                                                          Navigator.pop(context,
-                                                              localizations.ok),
-                                                      child: Text(
-                                                          localizations.ok),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            } else {
-                                              appState.changesMade();
-                                            }
-                                          },
-                                    style: customCardButtonStyle(appState),
-                                    child: Text(localizations.read),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: isContinuousLFScan
-                                        ? () => stopContinuousLFScan()
-                                        : () async {
-                                            if (appState.connector!.device ==
-                                                ChameleonDevice.ultra) {
-                                              await startContinuousLFScan();
-                                            } else if (appState
-                                                    .connector!.device ==
-                                                ChameleonDevice.lite) {
-                                              showDialog<String>(
-                                                context: context,
-                                                builder:
-                                                    (BuildContext context) =>
-                                                        AlertDialog(
-                                                  title: Text(localizations
-                                                      .no_supported),
-                                                  content: Text(
-                                                      localizations
-                                                          .lite_no_read,
-                                                      style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold)),
-                                                  actions: <Widget>[
-                                                    TextButton(
-                                                      onPressed: () =>
-                                                          Navigator.pop(context,
-                                                              localizations.ok),
-                                                      child: Text(
-                                                          localizations.ok),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            } else {
-                                              appState.changesMade();
-                                            }
-                                          },
-                                    style: customCardButtonStyle(appState),
-                                    child: Text(isContinuousLFScan
-                                        ? localizations.cancel
-                                        : localizations.continuous_scan),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Row(
-                              children: [
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: () async {
-                                      if (appState.connector!.device ==
-                                          ChameleonDevice.ultra) {
-                                        await readLFInfo();
-                                      } else if (appState.connector!.device ==
-                                          ChameleonDevice.lite) {
-                                        showDialog<String>(
-                                          context: context,
-                                          builder: (BuildContext context) =>
-                                              AlertDialog(
-                                            title: Text(
-                                                localizations.no_supported),
-                                            content: Text(
-                                                localizations.lite_no_read,
-                                                style: const TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold)),
-                                            actions: <Widget>[
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(
-                                                    context, localizations.ok),
-                                                child: Text(localizations.ok),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      } else {
-                                        appState.changesMade();
-                                      }
-                                    },
-                                    style: customCardButtonStyle(appState),
-                                    child: Text(localizations.read),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: isContinuousLFScan
-                                        ? () => stopContinuousLFScan()
-                                        : () async {
-                                            if (appState.connector!.device ==
-                                                ChameleonDevice.ultra) {
-                                              await startContinuousLFScan();
-                                            } else if (appState
-                                                    .connector!.device ==
-                                                ChameleonDevice.lite) {
-                                              showDialog<String>(
-                                                context: context,
-                                                builder:
-                                                    (BuildContext context) =>
-                                                        AlertDialog(
-                                                  title: Text(localizations
-                                                      .no_supported),
-                                                  content: Text(
-                                                      localizations
-                                                          .lite_no_read,
-                                                      style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold)),
-                                                  actions: <Widget>[
-                                                    TextButton(
-                                                      onPressed: () =>
-                                                          Navigator.pop(context,
-                                                              localizations.ok),
-                                                      child: Text(
-                                                          localizations.ok),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            } else {
-                                              appState.changesMade();
-                                            }
-                                          },
-                                    style: customCardButtonStyle(appState),
-                                    child: Text(isContinuousLFScan
-                                        ? localizations.cancel
-                                        : localizations.continuous_scan),
-                                  ),
-                                ),
-                              ],
-                            ),
-                      if (!lfInfo.cardExist) ...[
-                        const SizedBox(height: 16),
-                        ErrorMessage(errorMessage: localizations.no_card_found)
-                      ],
-                      if (lfInfo.card != null) ...[
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () async {
-                            await showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  title: Text(localizations.enter_name_of_card),
-                                  content: TextField(
-                                    onChanged: (value) {
-                                      setState(() {
-                                        dumpName = value;
-                                      });
-                                    },
-                                  ),
-                                  actions: [
-                                    ElevatedButton(
-                                      onPressed: () async {
-                                        await saveLFCard();
-                                        if (context.mounted) {
-                                          Navigator.pop(context);
-                                        }
-                                      },
-                                      child: Text(localizations.ok),
-                                    ),
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.pop(
-                                            context); // Close the modal without saving
-                                      },
-                                      child: Text(localizations.cancel),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          },
-                          style: customCardButtonStyle(appState),
-                          child: Text(localizations.save),
-                        ),
-                      ],
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
+              if (selected)
+                Icon(
+                  Icons.check_circle_rounded,
+                  size: 17,
+                  color: colors.primary,
+                ),
+            ],
+          ),
         ),
       ),
     );

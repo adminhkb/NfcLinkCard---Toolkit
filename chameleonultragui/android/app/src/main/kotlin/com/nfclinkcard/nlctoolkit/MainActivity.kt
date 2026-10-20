@@ -1,4 +1,4 @@
-package io.chameleon.ultra
+package com.nfclinkcard.nlctoolkit
 
 import io.flutter.embedding.android.FlutterActivity
 import io.reactivex.exceptions.UndeliverableException

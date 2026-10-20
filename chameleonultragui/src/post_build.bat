@@ -8,4 +8,4 @@ if "%1" == "Debug" (
 )
 
 REM Perform the install action for the specified configuration
-copy "%2\..\..\shared\%DEBUG_OR_RELEASE%\recovery.dll" "%2\..\..\runner\%DEBUG_OR_RELEASE%\recovery.dll" /Y
+copy "%~2\..\..\shared\%DEBUG_OR_RELEASE%\recovery.dll" "%~2\..\..\runner\%DEBUG_OR_RELEASE%\recovery.dll" /Y

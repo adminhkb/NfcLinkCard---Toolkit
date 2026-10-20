@@ -1,9 +1,11 @@
 import 'dart:typed_data';
 import 'dart:convert';
+
 import 'package:chameleonultragui/helpers/colors.dart' as colors;
 import 'package:chameleonultragui/helpers/definitions.dart';
 import 'package:chameleonultragui/helpers/general.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
@@ -41,12 +43,13 @@ class Dictionary {
       keys.add(Uint8List.fromList(List<int>.from(key)));
     }
     return Dictionary(
-        id: id,
-        name: name,
-        keys: keys,
-        color: color,
-        keyLength: keyLength,
-        folderId: folderId);
+      id: id,
+      name: name,
+      keys: keys,
+      color: color,
+      keyLength: keyLength,
+      folderId: folderId,
+    );
   }
 
   String toJson() {
@@ -73,8 +76,11 @@ class Dictionary {
     return const Utf8Encoder().convert(toString());
   }
 
-  factory Dictionary.fromString(String input,
-      {String name = '', Color color = Colors.deepOrange}) {
+  factory Dictionary.fromString(
+    String input, {
+    String name = '',
+    Color color = Colors.deepOrange,
+  }) {
     List<Uint8List> keys = [];
     List<int> allowedKeySizes = [
       12, // 6 - Mifare Classic
@@ -102,21 +108,22 @@ class Dictionary {
     }
 
     return Dictionary(
-        id: const Uuid().v4(),
-        name: name,
-        keys: keys,
-        color: color,
-        keyLength: currentKeySize);
+      id: const Uuid().v4(),
+      name: name,
+      keys: keys,
+      color: color,
+      keyLength: currentKeySize,
+    );
   }
 
-  Dictionary(
-      {String? id,
-      this.name = "",
-      this.keys = const [],
-      this.color = Colors.deepOrange,
-      this.keyLength = 0,
-      this.folderId})
-      : id = id ?? const Uuid().v4();
+  Dictionary({
+    String? id,
+    this.name = "",
+    this.keys = const [],
+    this.color = Colors.deepOrange,
+    this.keyLength = 0,
+    this.folderId,
+  }) : id = id ?? const Uuid().v4();
 }
 
 class DictionaryFolder {
@@ -145,11 +152,11 @@ class DictionaryFolder {
   }
 
   String toJson() => jsonEncode({
-        'id': id,
-        'name': name,
-        'color': colorToHex(color),
-        if (parentId != null) 'parentId': parentId,
-      });
+    'id': id,
+    'name': name,
+    'color': colorToHex(color),
+    if (parentId != null) 'parentId': parentId,
+  });
 }
 
 class DictionaryFolderBundle {
@@ -181,15 +188,14 @@ class DictionaryFolderBundle {
   }
 
   String toJson() => jsonEncode({
-        'format': 'chameleon-ultra-gui-dictionary-folder',
-        'version': 1,
-        'rootFolderId': rootFolderId,
-        'folders':
-            folders.map((folder) => jsonDecode(folder.toJson())).toList(),
-        'dictionaries': dictionaries
-            .map((dictionary) => jsonDecode(dictionary.toJson()))
-            .toList(),
-      });
+    'format': 'chameleon-ultra-gui-dictionary-folder',
+    'version': 1,
+    'rootFolderId': rootFolderId,
+    'folders': folders.map((folder) => jsonDecode(folder.toJson())).toList(),
+    'dictionaries': dictionaries
+        .map((dictionary) => jsonDecode(dictionary.toJson()))
+        .toList(),
+  });
 }
 
 class CardSave {
@@ -215,25 +221,27 @@ class CardSave {
     final name = data['name'] as String;
     final tag = getTagTypeByValue(data['tag']);
     final extraData = CardSaveExtra.import(data['extra'] ?? {});
-    final color =
-        data['color'] == null ? Colors.deepOrange : hexToColor(data['color']);
+    final color = data['color'] == null
+        ? Colors.deepOrange
+        : hexToColor(data['color']);
     final folderId = data['folderId'] as String?;
     List<Uint8List> tagData = (data['data'] as List<dynamic>)
         .map((e) => Uint8List.fromList(List<int>.from(e)))
         .toList();
 
     return CardSave(
-        id: id,
-        uid: uid,
-        sak: sak,
-        name: name,
-        tag: tag,
-        data: tagData,
-        color: color,
-        folderId: folderId,
-        extraData: extraData,
-        ats: Uint8List.fromList(ats),
-        atqa: Uint8List.fromList(atqa));
+      id: id,
+      uid: uid,
+      sak: sak,
+      name: name,
+      tag: tag,
+      data: tagData,
+      color: color,
+      folderId: folderId,
+      extraData: extraData,
+      ats: Uint8List.fromList(ats),
+      atqa: Uint8List.fromList(atqa),
+    );
   }
 
   String toJson() {
@@ -264,11 +272,11 @@ class CardSave {
     this.color = Colors.deepOrange,
     this.folderId,
     this.data = const [],
-  })  : id = id ?? const Uuid().v4(),
-        sak = sak ?? 0,
-        atqa = atqa ?? Uint8List(0),
-        ats = ats ?? Uint8List(0),
-        extraData = extraData ?? CardSaveExtra();
+  }) : id = id ?? const Uuid().v4(),
+       sak = sak ?? 0,
+       atqa = atqa ?? Uint8List(0),
+       ats = ats ?? Uint8List(0),
+       extraData = extraData ?? CardSaveExtra();
 }
 
 class CardFolder {
@@ -297,11 +305,11 @@ class CardFolder {
   }
 
   String toJson() => jsonEncode({
-        'id': id,
-        'name': name,
-        'color': colorToHex(color),
-        if (parentId != null) 'parentId': parentId,
-      });
+    'id': id,
+    'name': name,
+    'color': colorToHex(color),
+    if (parentId != null) 'parentId': parentId,
+  });
 }
 
 /// Versioned Chameleon Ultra GUI folder interchange format.
@@ -334,13 +342,12 @@ class CardFolderBundle {
   }
 
   String toJson() => jsonEncode({
-        'format': 'chameleon-ultra-gui-folder',
-        'version': 1,
-        'rootFolderId': rootFolderId,
-        'folders':
-            folders.map((folder) => jsonDecode(folder.toJson())).toList(),
-        'cards': cards.map((card) => jsonDecode(card.toJson())).toList(),
-      });
+    'format': 'chameleon-ultra-gui-folder',
+    'version': 1,
+    'rootFolderId': rootFolderId,
+    'folders': folders.map((folder) => jsonDecode(folder.toJson())).toList(),
+    'cards': cards.map((card) => jsonDecode(card.toJson())).toList(),
+  });
 }
 
 class CardSaveExtra {
@@ -351,7 +358,8 @@ class CardSaveExtra {
   factory CardSaveExtra.import(Map<String, dynamic> data) {
     List<int> readBytes(Map<String, dynamic> data, String key) {
       return List<int>.from(
-          data[key] != null ? data[key] as List<dynamic> : []);
+        data[key] != null ? data[key] as List<dynamic> : [],
+      );
     }
 
     final ultralightSignature = readBytes(data, 'ultralightSignature');
@@ -361,9 +369,10 @@ class CardSaveExtra {
         : <int>[];
 
     return CardSaveExtra(
-        ultralightSignature: Uint8List.fromList(ultralightSignature),
-        ultralightVersion: Uint8List.fromList(ultralightVersion),
-        ultralightCounters: ultralightCounters);
+      ultralightSignature: Uint8List.fromList(ultralightSignature),
+      ultralightVersion: Uint8List.fromList(ultralightVersion),
+      ultralightCounters: ultralightCounters,
+    );
   }
 
   Map<String, dynamic> export() {
@@ -384,13 +393,13 @@ class CardSaveExtra {
     return json;
   }
 
-  CardSaveExtra(
-      {Uint8List? ultralightSignature,
-      Uint8List? ultralightVersion,
-      List<int>? ultralightCounters})
-      : ultralightSignature = ultralightSignature ?? Uint8List(0),
-        ultralightVersion = ultralightVersion ?? Uint8List(0),
-        ultralightCounters = ultralightCounters ?? <int>[];
+  CardSaveExtra({
+    Uint8List? ultralightSignature,
+    Uint8List? ultralightVersion,
+    List<int>? ultralightCounters,
+  }) : ultralightSignature = ultralightSignature ?? Uint8List(0),
+       ultralightVersion = ultralightVersion ?? Uint8List(0),
+       ultralightCounters = ultralightCounters ?? <int>[];
 }
 
 class SharedPreferencesProvider extends ChangeNotifier {
@@ -407,10 +416,113 @@ class SharedPreferencesProvider extends ChangeNotifier {
 
   Future<void> load() async {
     _sharedPreferences = await SharedPreferences.getInstance();
+    await _seedBundledMctDictionaries();
+  }
+
+  Future<void> _seedBundledMctDictionaries() async {
+    const marker = 'mct_bundled_dictionaries_seeded_v1';
+    if (_sharedPreferences.getBool(marker) == true) return;
+
+    const sources = <({String id, String name, String asset})>[
+      (
+        id: 'mct-std',
+        name: 'MCT · Standard',
+        asset: 'assets/dictionaries/mct/std.keys',
+      ),
+      (
+        id: 'mct-extended-std',
+        name: 'MCT · Étendu',
+        asset: 'assets/dictionaries/mct/extended-std.keys',
+      ),
+      (
+        id: 'mct-hotel-std',
+        name: 'MCT · Hôtel',
+        asset: 'assets/dictionaries/mct/hotel-std.keys',
+      ),
+    ];
+
+    try {
+      // Load every asset before changing preferences so an incomplete bundle
+      // never produces a partially seeded installation.
+      final bundled = <Dictionary>[];
+      for (final source in sources) {
+        final contents = await rootBundle.loadString(source.asset);
+        final dictionary = Dictionary.fromString(contents, name: source.name);
+        if (dictionary.keyLength != 12 || dictionary.keys.isEmpty) {
+          throw FormatException('Invalid MCT dictionary: ${source.asset}');
+        }
+        dictionary.id = source.id;
+        bundled.add(dictionary);
+      }
+
+      final existing = getDictionaries();
+      final additions = <Dictionary>[];
+      for (final dictionary in bundled) {
+        final content = _dictionaryKeySignature(dictionary);
+        final alreadyPresent = [...existing, ...additions].any(
+          (saved) =>
+              saved.id == dictionary.id ||
+              saved.name.toLowerCase() == dictionary.name.toLowerCase() ||
+              (saved.keyLength == 12 &&
+                  _dictionaryKeySignature(saved) == content),
+        );
+        if (!alreadyPresent) additions.add(dictionary);
+      }
+
+      if (additions.isNotEmpty) {
+        final folders = getDictionaryFolders();
+        final matchingFolder = folders.where(
+          (folder) =>
+              folder.id == 'mct-bundled' ||
+              folder.name.toLowerCase() == 'mifare classic tool',
+        );
+        final folderId = matchingFolder.isEmpty
+            ? 'mct-bundled'
+            : matchingFolder.first.id;
+        if (matchingFolder.isEmpty) {
+          folders.add(
+            DictionaryFolder(id: folderId, name: 'MIFARE Classic Tool'),
+          );
+          final saved = await _sharedPreferences.setStringList(
+            'dictionary_folders',
+            folders.map((folder) => folder.toJson()).toList(),
+          );
+          if (!saved) throw StateError('Could not save the MCT folder');
+        }
+
+        for (final dictionary in additions) {
+          dictionary.folderId = folderId;
+        }
+        final saved = await _sharedPreferences.setStringList(
+          'dictionaries',
+          [
+            ...existing,
+            ...additions,
+          ].map((dictionary) => dictionary.toJson()).toList(),
+        );
+        if (!saved) throw StateError('Could not save the MCT dictionaries');
+      }
+
+      // Keep this marker after deletion or edits: user choices must not be
+      // undone on the next launch. Write it last so a failed write can retry.
+      final marked = await _sharedPreferences.setBool(marker, true);
+      if (!marked) {
+        throw StateError('Could not mark MCT dictionaries as seeded');
+      }
+    } catch (error) {
+      // Missing or malformed bundled assets should not prevent app startup.
+      debugPrint('Could not load bundled MCT dictionaries: $error');
+    }
+  }
+
+  String _dictionaryKeySignature(Dictionary dictionary) {
+    final keys = dictionary.keys.map(bytesToHex).toSet().toList()..sort();
+    return keys.join(',');
   }
 
   ThemeMode getTheme() {
-    final themeValue = _sharedPreferences.getInt('app_theme') ?? 0;
+    final themeValue =
+        _sharedPreferences.getInt('app_theme') ?? ThemeMode.dark.index;
     return ThemeMode.values[themeValue];
   }
 
@@ -551,23 +663,27 @@ class SharedPreferencesProvider extends ChangeNotifier {
   }
 
   String getLocaleString() {
-    return _sharedPreferences.getString("locale") ?? "en";
+    return _sharedPreferences.getString("locale") ??
+        WidgetsBinding.instance.platformDispatcher.locale.toLanguageTag();
   }
 
   Locale getLocale() {
-    final localeId = getLocaleString();
-    Locale locale;
-    if (localeId.contains("-")) {
-      final [lcode, ccode] = localeId.toString().split("-");
-      locale = Locale(lcode, ccode);
-    } else {
-      locale = Locale(localeId);
+    final localeId = getLocaleString().replaceAll('_', '-').toLowerCase();
+    for (final supported in AppLocalizations.supportedLocales) {
+      if (supported.toLanguageTag().toLowerCase() == localeId) {
+        return supported;
+      }
     }
-    if (!AppLocalizations.supportedLocales.contains(locale)) {
-      return const Locale('en');
-    } else {
-      return locale;
+
+    // A system locale such as fr-FR should use the available fr translation.
+    final languageCode = localeId.split('-').first;
+    for (final supported in AppLocalizations.supportedLocales) {
+      if (supported.languageCode.toLowerCase() == languageCode &&
+          supported.countryCode == null) {
+        return supported;
+      }
     }
+    return const Locale('en');
   }
 
   void clearLocale() {
@@ -649,7 +765,9 @@ class SharedPreferencesProvider extends ChangeNotifier {
         case List l:
           // this is the reverse of the hack above :)
           _sharedPreferences.setStringList(
-              key, l.map((e) => jsonEncode(e)).toList());
+            key,
+            l.map((e) => jsonEncode(e)).toList(),
+          );
           break;
         default:
           break;

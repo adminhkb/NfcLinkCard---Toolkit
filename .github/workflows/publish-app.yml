@@ -1,9 +1,7 @@
 name: Publish APP
 
 on:
-  push:
-    branches:
-      - main
+  # Publishing requires NLC_PUBLISH_ENABLED=true and NLC-specific signing secrets.
   workflow_dispatch:
 
 concurrency:
@@ -12,6 +10,7 @@ concurrency:
 
 jobs:
   build-android:
+    if: ${{ vars.NLC_PUBLISH_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,13 +26,13 @@ jobs:
       - name: Load Secret
         uses: mobiledevops/secret-to-file-action@v1
         with:
-          base64-encoded-secret: ${{ secrets.KEY_PROPERTIES }}
+          base64-encoded-secret: ${{ secrets.NLC_KEY_PROPERTIES }}
           filename: "key.properties"
           working-directory: "./chameleonultragui/android"
       - name: Load Secret
         uses: mobiledevops/secret-to-file-action@v1
         with:
-          base64-encoded-secret: ${{ secrets.UPLOAD_KEYSTORE }}
+          base64-encoded-secret: ${{ secrets.NLC_UPLOAD_KEYSTORE }}
           filename: "upload-keystore.jks"
           working-directory: "./chameleonultragui"
       - uses: subosito/flutter-action@v2
@@ -55,7 +54,7 @@ jobs:
       - name: Load Secret
         uses: mobiledevops/secret-to-file-action@v1
         with:
-          base64-encoded-secret: ${{ secrets.PLAYSTORE_KEY }}
+          base64-encoded-secret: ${{ secrets.NLC_PLAYSTORE_KEY }}
           filename: "api-key.json"
           working-directory: "./chameleonultragui"
       - name: Fastlane Publishing on ${{ github.event.inputs.publish_track }}
@@ -67,10 +66,11 @@ jobs:
         run: fastlane production
         working-directory: "./chameleonultragui/"
   build-macos:
+    if: ${{ vars.NLC_PUBLISH_ENABLED == 'true' }}
     runs-on: macos-latest
     env:
-      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.NLC_APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.NLC_APP_STORE_CONNECT_KEY_IDENTIFIER }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -89,20 +89,20 @@ jobs:
       - name: Export private key
         uses: mobiledevops/secret-to-file-action@v1
         with:
-          base64-encoded-secret: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          base64-encoded-secret: ${{ secrets.NLC_APP_STORE_CONNECT_PRIVATE_KEY }}
           filename: "AuthKey.p8"
           working-directory: "./chameleonultragui"
       - name: Export certificate
         uses: mobiledevops/secret-to-file-action@v1
         with:
-          base64-encoded-secret: ${{ secrets.APP_STORE_CERTIFICATE }}
+          base64-encoded-secret: ${{ secrets.NLC_APP_STORE_CERTIFICATE }}
           filename: "cert_key"
           working-directory: "./chameleonultragui"
       - name: Initialize keychain and certificates
         working-directory: "./chameleonultragui"
         run: |
           export APP_STORE_CONNECT_PRIVATE_KEY=`cat AuthKey.p8`
-          app-store-connect fetch-signing-files run.chameleon.gui --platform MAC_OS --type MAC_APP_STORE --certificate-key=@file:cert_key --create
+          app-store-connect fetch-signing-files com.nfclinkcard.nlctoolkit --platform MAC_OS --type MAC_APP_STORE --certificate-key=@file:cert_key --create
           app-store-connect certificates list --type MAC_INSTALLER_DISTRIBUTION --certificate-key=@file:cert_key --save 2>&1 | grep -q 'Did not find' && app-store-connect certificates create --type MAC_INSTALLER_DISTRIBUTION --certificate-key=@file:cert_key --save
           keychain initialize
           keychain add-certificates
@@ -139,7 +139,7 @@ jobs:
         shell: bash
         run: |
           export APP_STORE_CONNECT_PRIVATE_KEY="$(cat AuthKey.p8)"
-          APP_ID=$(app-store-connect apps list --bundle-id-identifier run.chameleon.gui --strict-match-identifier --json \
+          APP_ID=$(app-store-connect apps list --bundle-id-identifier com.nfclinkcard.nlctoolkit --strict-match-identifier --json \
             | jq -er 'if length == 1 then .[0].id else error("Expected exactly one matching app") end')
           BUILD_ID=""
           while [[ -z "$BUILD_ID" ]]; do
@@ -164,10 +164,11 @@ jobs:
           app-store-connect builds submit-to-testflight $BUILD_ID || true
           app-store-connect beta-groups add-build $BUILD_ID --beta-group="Open beta testing" || true
   build-ios:
+    if: ${{ vars.NLC_PUBLISH_ENABLED == 'true' }}
     runs-on: macos-latest
     env:
-      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.NLC_APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.NLC_APP_STORE_CONNECT_KEY_IDENTIFIER }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -186,13 +187,13 @@ jobs:
       - name: Export private key
         uses: mobiledevops/secret-to-file-action@v1
         with:
-          base64-encoded-secret: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          base64-encoded-secret: ${{ secrets.NLC_APP_STORE_CONNECT_PRIVATE_KEY }}
           filename: "AuthKey.p8"
           working-directory: "./chameleonultragui"
       - name: Export certificate
         uses: mobiledevops/secret-to-file-action@v1
         with:
-          base64-encoded-secret: ${{ secrets.APP_STORE_CERTIFICATE }}
+          base64-encoded-secret: ${{ secrets.NLC_APP_STORE_CERTIFICATE }}
           filename: "cert_key"
           working-directory: "./chameleonultragui"
       - name: Initialize keychain and certificates
@@ -218,7 +219,7 @@ jobs:
         shell: bash
         run: |
           export APP_STORE_CONNECT_PRIVATE_KEY="$(cat AuthKey.p8)"
-          APP_ID=$(app-store-connect apps list --bundle-id-identifier run.chameleon.gui --strict-match-identifier --json \
+          APP_ID=$(app-store-connect apps list --bundle-id-identifier com.nfclinkcard.nlctoolkit --strict-match-identifier --json \
             | jq -er 'if length == 1 then .[0].id else error("Expected exactly one matching app") end')
           BUILD_ID=""
           while [[ -z "$BUILD_ID" ]]; do

@@ -78,14 +78,23 @@ class SettingsMainPageState extends State<SettingsMainPage> {
       ),
       body: SingleChildScrollView(
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 10),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _SettingsSection(
+                    title: localizations.settings_section_appearance,
+                    icon: Icons.palette_outlined,
+                    children: [
               Text(localizations.sidebar_expansion,
                   style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 5),
               ToggleButtonsWrapper(
+                  key: ValueKey(
+                      'sidebar-${Localizations.localeOf(context).toLanguageTag()}'),
                   items: [
                     localizations.expand,
                     localizations.auto,
@@ -122,6 +131,8 @@ class SettingsMainPageState extends State<SettingsMainPage> {
               ),
               const SizedBox(height: 5),
               ToggleButtonsWrapper(
+                  key: ValueKey(
+                      'theme-${Localizations.localeOf(context).toLanguageTag()}'),
                   items: [
                     localizations.system,
                     localizations.light,
@@ -136,66 +147,22 @@ class SettingsMainPageState extends State<SettingsMainPage> {
                   }),
               const SizedBox(height: 10),
               Text(
-                localizations.color_scheme,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 5),
-              DropdownButton(
-                value: appState.sharedPreferencesProvider.getThemeColorIndex(),
-                icon: const Icon(Icons.arrow_downward),
-                elevation: 16,
-                onChanged: (value) {
-                  appState.sharedPreferencesProvider.setThemeColor(value ?? 0);
-                  appState.changesMade();
-                },
-                items: [
-                  DropdownMenuItem(
-                    value: 0,
-                    child: Text(localizations.def),
-                  ),
-                  DropdownMenuItem(
-                    value: 1,
-                    child: Text(localizations.purple),
-                  ),
-                  DropdownMenuItem(
-                    value: 2,
-                    child: Text(localizations.blue),
-                  ),
-                  DropdownMenuItem(
-                    value: 3,
-                    child: Text(localizations.green),
-                  ),
-                  DropdownMenuItem(
-                    value: 4,
-                    child: Text(localizations.indigo),
-                  ),
-                  DropdownMenuItem(
-                    value: 5,
-                    child: Text(localizations.lime),
-                  ),
-                  DropdownMenuItem(
-                    value: 6,
-                    child: Text(localizations.red),
-                  ),
-                  DropdownMenuItem(
-                    value: 7,
-                    child: Text(localizations.yellow),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
                 localizations.language,
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 5),
               FittedBox(
+                alignment: Alignment.centerLeft,
                 fit: BoxFit.scaleDown,
                 child: DropdownButton(
-                  value: appState.sharedPreferencesProvider.getLocaleString(),
+                  value: appState.sharedPreferencesProvider
+                      .getLocale()
+                      .toLanguageTag(),
                   onChanged: (value) {
+                    final parts = (value ?? 'en').split('-');
                     appState.sharedPreferencesProvider
-                        .setLocale(Locale(value ?? 'en'));
+                        .setLocale(Locale(parts.first,
+                            parts.length > 1 ? parts.last : null));
                     appState.changesMade();
                   },
                   items: AppLocalizations.supportedLocales.map((locale) {
@@ -206,68 +173,66 @@ class SettingsMainPageState extends State<SettingsMainPage> {
                   }).toList(),
                 ),
               ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
+                    ],
+                  ),
+                  _SettingsSection(
+                    title: localizations.settings_section_connection,
+                    icon: Icons.bluetooth_connected_outlined,
+                    children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 680),
+                child: SwitchListTile(
+                  title: Text(
                     localizations.auto_scan_devices,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(width: 5),
-                  Switch(
-                    value:
-                        appState.sharedPreferencesProvider.getAutoScanEnabled(),
-                    onChanged: (value) async {
-                      appState.sharedPreferencesProvider
-                          .setAutoScanEnabled(value);
-                      appState.changesMade();
-                    },
-                  ),
-                ],
+                  value: appState.sharedPreferencesProvider.getAutoScanEnabled(),
+                  onChanged: (value) async {
+                    appState.sharedPreferencesProvider.setAutoScanEnabled(value);
+                    appState.changesMade();
+                  },
+                ),
               ),
               const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 680),
+                child: SwitchListTile(
+                  title: Text(
                     localizations.auto_connect_first_device,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(width: 5),
-                  Switch(
-                    value: appState.sharedPreferencesProvider
-                        .getAutoConnectFirstFoundDevice(),
-                    onChanged: (value) async {
-                      appState.sharedPreferencesProvider
-                          .setAutoConnectFirstFoundDevice(value);
-                      appState.changesMade();
-                    },
-                  ),
-                ],
+                  value: appState.sharedPreferencesProvider
+                      .getAutoConnectFirstFoundDevice(),
+                  onChanged: (value) async {
+                    appState.sharedPreferencesProvider
+                        .setAutoConnectFirstFoundDevice(value);
+                    appState.changesMade();
+                  },
+                ),
               ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
+                    ],
+                  ),
+                  _SettingsSection(
+                    title: localizations.settings_section_data,
+                    icon: Icons.folder_outlined,
+                    children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 680),
+                child: SwitchListTile(
+                  title: Text(
                     localizations.confirm_deletions,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(width: 5),
-                  Switch(
-                    value:
-                        appState.sharedPreferencesProvider.getConfirmDelete(),
-                    onChanged: (value) async {
-                      appState.sharedPreferencesProvider
-                          .setConfirmDelete(value);
-                      appState.changesMade();
-                    },
-                  ),
-                ],
+                  value: appState.sharedPreferencesProvider.getConfirmDelete(),
+                  onChanged: (value) async {
+                    appState.sharedPreferencesProvider.setConfirmDelete(value);
+                    appState.changesMade();
+                  },
+                ),
               ),
               const SizedBox(height: 10),
               FittedBox(
+                alignment: Alignment.centerLeft,
                 fit: BoxFit.scaleDown,
                 child: TextButton(
                     onPressed: () => showDialog<String>(
@@ -337,7 +302,7 @@ class SettingsMainPageState extends State<SettingsMainPage> {
                                   await FilePicker.saveFile(
                                     dialogTitle:
                                         '${localizations.output_file}:',
-                                    fileName: 'ChameleonUltraGUISettings.json',
+                                    fileName: 'NLCToolkitSettings.json',
                                     bytes: const Utf8Encoder().convert(appState
                                         .sharedPreferencesProvider
                                         .dumpSettingsToJson()),
@@ -359,6 +324,7 @@ class SettingsMainPageState extends State<SettingsMainPage> {
               ),
               const SizedBox(height: 10),
               FittedBox(
+                alignment: Alignment.centerLeft,
                 fit: BoxFit.scaleDown,
                 child: TextButton(
                   onPressed: () => showDialog<String>(
@@ -443,8 +409,14 @@ class SettingsMainPageState extends State<SettingsMainPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+                    ],
+                  ),
+                  _SettingsSection(
+                    title: localizations.about,
+                    icon: Icons.info_outline_rounded,
+                    children: [
               TextButton(
+                style: TextButton.styleFrom(alignment: Alignment.centerLeft),
                 onPressed: () => showDialog<String>(
                   context: context,
                   builder: (BuildContext context) => AlertDialog(
@@ -468,7 +440,7 @@ class SettingsMainPageState extends State<SettingsMainPage> {
                             return SingleChildScrollView(
                                 child: Column(
                               children: [
-                                const Text('Chameleon Ultra GUI',
+                                const Text('NLC Toolkit',
                                     style:
                                         TextStyle(fontWeight: FontWeight.bold)),
                                 Text(localizations.about_text),
@@ -484,11 +456,13 @@ class SettingsMainPageState extends State<SettingsMainPage> {
                                 DeveloperList(avatars: developers),
                                 const SizedBox(height: 10),
                                 Text('${localizations.license}:'),
-                                const Text('GNU General Public License v3.0',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 10),
-                                GestureDetector(
+                                 const Text('GNU General Public License v3.0',
+                                     style:
+                                         TextStyle(fontWeight: FontWeight.bold)),
+                                 const SizedBox(height: 10),
+                                 Text(localizations.based_on_chameleon_gui),
+                                 const SizedBox(height: 6),
+                                 GestureDetector(
                                     onTap: () async {
                                       await launchUrl(Uri.parse(
                                           'https://github.com/GameTec-live/ChameleonUltraGUI'));
@@ -535,6 +509,7 @@ class SettingsMainPageState extends State<SettingsMainPage> {
               ),
               const SizedBox(height: 10),
               TextButton(
+                style: TextButton.styleFrom(alignment: Alignment.centerLeft),
                 onPressed: () async {
                   Map<String, String> licenses = {
                     'BSD-3-Clause': await loadLicense('BSD-3-Clause'),
@@ -582,6 +557,7 @@ class SettingsMainPageState extends State<SettingsMainPage> {
               ),
               const SizedBox(height: 10),
               TextButton(
+                style: TextButton.styleFrom(alignment: Alignment.centerLeft),
                 onPressed: () => showDialog<String>(
                   context: context,
                   builder: (BuildContext context) => const ChangelogView(),
@@ -590,14 +566,21 @@ class SettingsMainPageState extends State<SettingsMainPage> {
               ),
               const SizedBox(height: 10),
               TextButton(
+                style: TextButton.styleFrom(alignment: Alignment.centerLeft),
                 onPressed: () async {
                   await launchUrl(Uri.parse(
                       'https://crowdin.com/project/chameleonultragui'));
                 },
                 child: Text(localizations.help_translate),
               ),
-              const SizedBox(height: 10),
+                    ],
+                  ),
+                  _SettingsSection(
+                    title: localizations.settings_section_developer,
+                    icon: Icons.code_rounded,
+                    children: [
               TextButton(
+                style: TextButton.styleFrom(alignment: Alignment.centerLeft),
                 onPressed: () => showDialog<String>(
                   context: context,
                   builder: (BuildContext context) => AlertDialog(
@@ -631,6 +614,7 @@ class SettingsMainPageState extends State<SettingsMainPage> {
               ),
               const SizedBox(height: 10),
               TextButton(
+                style: TextButton.styleFrom(alignment: Alignment.centerLeft),
                 onPressed: () => showDialog<String>(
                   context: context,
                   builder: (BuildContext context) => AlertDialog(
@@ -659,9 +643,66 @@ class SettingsMainPageState extends State<SettingsMainPage> {
                 ),
                 child: Text(
                     "${appState.sharedPreferencesProvider.isDebugMode() ? localizations.deactivate : localizations.activate} ${localizations.debug_mode.toLowerCase()}"),
-              )
-            ],
+              ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsSection extends StatelessWidget {
+  const _SettingsSection({
+    required this.title,
+    required this.icon,
+    required this.children,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: colors.primaryContainer,
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Icon(icon, color: colors.primary, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          )),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Divider(color: colors.outlineVariant, height: 1),
+            const SizedBox(height: 14),
+            ...children,
+          ],
         ),
       ),
     );
