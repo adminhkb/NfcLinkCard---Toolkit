@@ -752,6 +752,9 @@
   "mct_import_choose": "Choose files",
   "mct_import_imported": "Imported: {count}",
   "mct_import_card": "UID {uid} · {sectors} sectors",
+  "@mct_import_card": {
+    "placeholders": { "uid": {}, "sectors": {} }
+  },
   "mct_import_unread": "{count} unread blocks",
   "mct_import_partial": "{count} blocks with unknown bytes, stored as 00",
   "mct_import_invalid": "Not a valid MCT dump: {reason}",
@@ -792,6 +795,9 @@
   "mct_dictionaries": "Dictionaries",
   "mct_map_keys": "Create key map",
   "mct_key_map_summary": "UID {uid} · {found}/{total} sectors with a key",
+  "@mct_key_map_summary": {
+    "placeholders": { "uid": {}, "found": {}, "total": {} }
+  },
   "mct_keys_missing": "No key for sectors: {sectors}",
   "mct_key_map_required": "Create the key map of the target card first.",
   "mct_format_action": "Format",
@@ -802,6 +808,9 @@
   "mct_nothing_to_write": "Nothing to write with these options.",
   "mct_skipped_trailers": "Trailers skipped because of invalid access conditions: sectors {sectors}",
   "mct_report": "Verified: {verified} · Written, not read back: {written} · Failed: {failed} · No key: {noKey}",
+  "@mct_report": {
+    "placeholders": { "verified": {}, "written": {}, "failed": {}, "noKey": {} }
+  },
   "mct_failed_blocks": "Failed blocks: {blocks}",
   "mct_card_changed": "The card changed or was removed. Writing stopped.",
   "mct_write_error": "Communication error during writing."
