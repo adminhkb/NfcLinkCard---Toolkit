@@ -17,7 +17,7 @@ InstallDir "$PROGRAMFILES\NLC Toolkit"
 ; Registry key to check for directory (so if you install again, it will 
 ; overwrite the old one automatically)
 InstallDirRegKey HKLM "Software\NLCToolkit" "Install_Dir"
-!define MUI_ICON "chameleonultragui\windows\runner\resources\app_icon.ico"
+!define MUI_ICON "nlc_toolkit\windows\runner\resources\app_icon.ico"
 
 ;--------------------------------
 
@@ -44,7 +44,7 @@ Section "NLC Toolkit (required)"
   SetOutPath $INSTDIR
   
   ; Put file there
-  File /r "chameleonultragui\build\windows\x64\runner\Release\*.*"
+  File /r "nlc_toolkit\build\windows\x64\runner\Release\*.*"
   File "LICENSE"
   
   ; Write the installation path into the registry

@@ -5,21 +5,21 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "chameleonultragui",
-            "cwd": "chameleonultragui",
+            "name": "nlc_toolkit",
+            "cwd": "nlc_toolkit",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "chameleonultragui (profile mode)",
-            "cwd": "chameleonultragui",
+            "name": "nlc_toolkit (profile mode)",
+            "cwd": "nlc_toolkit",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "chameleonultragui (release mode)",
-            "cwd": "chameleonultragui",
+            "name": "nlc_toolkit (release mode)",
+            "cwd": "nlc_toolkit",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"

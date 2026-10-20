@@ -21,7 +21,7 @@ La base de code contient notamment la gestion des dictionnaires de clés, l’é
 
 L’application embarque les trois dictionnaires de clés fournis par **MIFARE Classic Tool** : `std.keys` (3 clés), `extended-std.keys` (2 477 clés) et `hotel-std.keys` (24 clés). Ils sont conservés tels quels, avec leurs commentaires de provenance. Le format est une clé MIFARE Classic hexadécimale de 12 caractères par ligne ; les lignes vides et les commentaires commençant par `#` sont ignorés. Les clés des fichiers Standard et Hôtel sont déjà comprises dans le fichier Étendu.
 
-Ces fichiers proviennent du [dépôt officiel de MCT](https://github.com/ikarus23/MifareClassicTool/tree/b52568c8f274968ded8a7a4bf6f3a067419b63ed/Mifare%20Classic%20Tool/app/src/main/assets/key-files), au commit `b52568c8f274968ded8a7a4bf6f3a067419b63ed`. Voir leur [notice d’attribution](chameleonultragui/assets/dictionaries/mct/NOTICE.md) et la [licence GPLv3](LICENSE).
+Ces fichiers proviennent du [dépôt officiel de MCT](https://github.com/ikarus23/MifareClassicTool/tree/b52568c8f274968ded8a7a4bf6f3a067419b63ed/Mifare%20Classic%20Tool/app/src/main/assets/key-files), au commit `b52568c8f274968ded8a7a4bf6f3a067419b63ed`. Voir leur [notice d’attribution](nlc_toolkit/assets/dictionaries/mct/NOTICE.md) et la [licence GPLv3](LICENSE).
 
 Au premier lancement après l’installation ou la mise à jour, NLC Toolkit les ajoute dans **Bibliothèque → Dictionnaires → MIFARE Classic Tool** sans remplacer les dictionnaires personnels. Pour une carte MIFARE Classic, **Lire → Fonctions avancées → Clés** propose **MCT · Standard** par défaut ; **MCT · Étendu** et **MCT · Hôtel** peuvent être choisis dans la liste. Le dictionnaire Étendu peut rendre la vérification des clés sensiblement plus longue.
 
@@ -47,10 +47,10 @@ La lecture et l’écriture avec un ChameleonUltra V2 réel doivent encore être
 
 ## Développement
 
-Le projet Flutter se trouve dans `chameleonultragui/`. Installer une version de Flutter et de Dart compatible avec [`pubspec.yaml`](chameleonultragui/pubspec.yaml), puis lancer depuis la racine du dépôt :
+Le projet Flutter se trouve dans `nlc_toolkit/`. Installer une version de Flutter et de Dart compatible avec [`pubspec.yaml`](nlc_toolkit/pubspec.yaml), puis lancer depuis la racine du dépôt :
 
 ```sh
-cd chameleonultragui
+cd nlc_toolkit
 flutter pub get
 flutter devices
 flutter run -d DEVICE_ID
@@ -63,10 +63,10 @@ La compilation iOS et macOS nécessite un environnement Apple adapté. Les ident
 Depuis la racine du dépôt, générer une archive contenant l'exécutable et ses dépendances :
 
 ```powershell
-pwsh -File chameleonultragui/tool/package_windows.ps1
+pwsh -File nlc_toolkit/tool/package_windows.ps1
 ```
 
-Décompresser l'archive créée dans `chameleonultragui/dist/` avant de lancer `nlc_toolkit.exe`. Brancher le ChameleonUltra V2 en USB, puis le sélectionner dans **Connexion**. Si la détection automatique ne le trouve pas, choisir son port COM avec **Connexion manuelle**. Le Bluetooth du PC n'est pas encore pris en charge dans la version Windows.
+Décompresser l'archive créée dans `nlc_toolkit/dist/` avant de lancer `nlc_toolkit.exe`. Brancher le ChameleonUltra V2 en USB, puis le sélectionner dans **Connexion**. Si la détection automatique ne le trouve pas, choisir son port COM avec **Connexion manuelle**. Le Bluetooth du PC n'est pas encore pris en charge dans la version Windows.
 
 ## Origine et licence
 

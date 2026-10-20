@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./chameleonultragui
+        working-directory: ./nlc_toolkit
     steps:
       - uses: actions/checkout@v7
         with:
@@ -28,13 +28,13 @@ jobs:
         with:
           base64-encoded-secret: ${{ secrets.NLC_KEY_PROPERTIES }}
           filename: "key.properties"
-          working-directory: "./chameleonultragui/android"
+          working-directory: "./nlc_toolkit/android"
       - name: Load Secret
         uses: mobiledevops/secret-to-file-action@v1
         with:
           base64-encoded-secret: ${{ secrets.NLC_UPLOAD_KEYSTORE }}
           filename: "upload-keystore.jks"
-          working-directory: "./chameleonultragui"
+          working-directory: "./nlc_toolkit"
       - uses: subosito/flutter-action@v2
         with:
           channel: "stable"
@@ -43,28 +43,28 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: appbundle
-          path: chameleonultragui/build/app/outputs/bundle/release/app-release.aab
+          path: nlc_toolkit/build/app/outputs/bundle/release/app-release.aab
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.2"
       - name: Install dependencies
         run: bundle install
-        working-directory: "./chameleonultragui/"
+        working-directory: "./nlc_toolkit/"
       - name: Load Secret
         uses: mobiledevops/secret-to-file-action@v1
         with:
           base64-encoded-secret: ${{ secrets.NLC_PLAYSTORE_KEY }}
           filename: "api-key.json"
-          working-directory: "./chameleonultragui"
+          working-directory: "./nlc_toolkit"
       - name: Fastlane Publishing on ${{ github.event.inputs.publish_track }}
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish_track != ''
         run: fastlane ${{ github.event.inputs.publish_track }}
-        working-directory: "./chameleonultragui/"
+        working-directory: "./nlc_toolkit/"
       - name: Fastlane Publishing on production
         if: github.event_name != 'workflow_dispatch' || github.event.inputs.publish_track == ''
         run: fastlane production
-        working-directory: "./chameleonultragui/"
+        working-directory: "./nlc_toolkit/"
   build-macos:
     if: ${{ vars.NLC_PUBLISH_ENABLED == 'true' }}
     runs-on: macos-latest
@@ -91,15 +91,15 @@ jobs:
         with:
           base64-encoded-secret: ${{ secrets.NLC_APP_STORE_CONNECT_PRIVATE_KEY }}
           filename: "AuthKey.p8"
-          working-directory: "./chameleonultragui"
+          working-directory: "./nlc_toolkit"
       - name: Export certificate
         uses: mobiledevops/secret-to-file-action@v1
         with:
           base64-encoded-secret: ${{ secrets.NLC_APP_STORE_CERTIFICATE }}
           filename: "cert_key"
-          working-directory: "./chameleonultragui"
+          working-directory: "./nlc_toolkit"
       - name: Initialize keychain and certificates
-        working-directory: "./chameleonultragui"
+        working-directory: "./nlc_toolkit"
         run: |
           export APP_STORE_CONNECT_PRIVATE_KEY=`cat AuthKey.p8`
           app-store-connect fetch-signing-files com.nfclinkcard.nlctoolkit --platform MAC_OS --type MAC_APP_STORE --certificate-key=@file:cert_key --create
@@ -108,13 +108,13 @@ jobs:
           keychain add-certificates
           xcode-project use-profiles
       - name: Build app
-        working-directory: "./chameleonultragui"
+        working-directory: "./nlc_toolkit"
         run: |
           sudo chown -R $USER . && sudo chmod -R a+rwx .
           flutter build macos --release --build-number ${{ github.run_number }} --build-name "1.3.${{ github.run_number }}"
           sudo chown -R $USER . && sudo chmod -R a+rwx .
       - name: Sign package
-        working-directory: "./chameleonultragui"
+        working-directory: "./nlc_toolkit"
         run: |
           APP_NAME=$(find $(pwd) -name "*.app")
           PACKAGE_NAME=$(basename "$APP_NAME" .app).pkg
@@ -129,13 +129,13 @@ jobs:
           xcrun productsign --sign "$INSTALLER_CERT_NAME" unsigned.pkg "$PACKAGE_NAME"
           sudo chown -R $USER . && sudo chmod -R a+rwx .
       - name: Upload package to App Store
-        working-directory: "./chameleonultragui"
+        working-directory: "./nlc_toolkit"
         run: |
           export APP_STORE_CONNECT_PRIVATE_KEY=`cat AuthKey.p8`
           app-store-connect publish --path "$PACKAGE_NAME"
       - name: Wait for processed macOS build
         timeout-minutes: 30
-        working-directory: "./chameleonultragui"
+        working-directory: "./nlc_toolkit"
         shell: bash
         run: |
           export APP_STORE_CONNECT_PRIVATE_KEY="$(cat AuthKey.p8)"
@@ -153,12 +153,12 @@ jobs:
           done
           echo "BUILD_ID=$BUILD_ID" >> "$GITHUB_ENV"
       - name: Submit to App Store
-        working-directory: "./chameleonultragui"
+        working-directory: "./nlc_toolkit"
         run: |
           export APP_STORE_CONNECT_PRIVATE_KEY=`cat AuthKey.p8`
           app-store-connect builds submit-to-app-store --cancel-previous-submissions --platform=MAC_OS --version-string="1.3.${{ github.run_number }}" --whats-new="Compiled from `git log --pretty=format:%s --oneline --ancestry-path HEAD~1..HEAD`" --version-string="1.3.${{ github.run_number }}" $BUILD_ID
       - name: Submit to TestFlight
-        working-directory: "./chameleonultragui"
+        working-directory: "./nlc_toolkit"
         run: |
           export APP_STORE_CONNECT_PRIVATE_KEY=`cat AuthKey.p8`
           app-store-connect builds submit-to-testflight $BUILD_ID || true
@@ -189,15 +189,15 @@ jobs:
         with:
           base64-encoded-secret: ${{ secrets.NLC_APP_STORE_CONNECT_PRIVATE_KEY }}
           filename: "AuthKey.p8"
-          working-directory: "./chameleonultragui"
+          working-directory: "./nlc_toolkit"
       - name: Export certificate
         uses: mobiledevops/secret-to-file-action@v1
         with:
           base64-encoded-secret: ${{ secrets.NLC_APP_STORE_CERTIFICATE }}
           filename: "cert_key"
-          working-directory: "./chameleonultragui"
+          working-directory: "./nlc_toolkit"
       - name: Initialize keychain and certificates
-        working-directory: "./chameleonultragui"
+        working-directory: "./nlc_toolkit"
         run: |
           export APP_STORE_CONNECT_PRIVATE_KEY=`cat AuthKey.p8`
           app-store-connect fetch-signing-files $(xcode-project detect-bundle-id) --platform IOS --type IOS_APP_STORE --certificate-key=@file:cert_key --create
@@ -205,17 +205,17 @@ jobs:
           keychain add-certificates
           xcode-project use-profiles
       - name: Build app
-        working-directory: "./chameleonultragui"
+        working-directory: "./nlc_toolkit"
         run: |
           flutter build ipa --release --export-options-plist=$HOME/export_options.plist --build-number ${{ github.run_number }} --build-name "1.3.${{ github.run_number }}"
       - name: Upload app to App Store
-        working-directory: "./chameleonultragui"
+        working-directory: "./nlc_toolkit"
         run: |
           export APP_STORE_CONNECT_PRIVATE_KEY=`cat AuthKey.p8`
           app-store-connect publish --path $(find $(pwd) -name "*.ipa")
       - name: Wait for processed iOS build
         timeout-minutes: 30
-        working-directory: "./chameleonultragui"
+        working-directory: "./nlc_toolkit"
         shell: bash
         run: |
           export APP_STORE_CONNECT_PRIVATE_KEY="$(cat AuthKey.p8)"
@@ -233,12 +233,12 @@ jobs:
           done
           echo "BUILD_ID=$BUILD_ID" >> "$GITHUB_ENV"
       - name: Submit to App Store
-        working-directory: "./chameleonultragui"
+        working-directory: "./nlc_toolkit"
         run: |
           export APP_STORE_CONNECT_PRIVATE_KEY=`cat AuthKey.p8`
           app-store-connect builds submit-to-app-store --cancel-previous-submissions --platform=IOS --version-string="1.3.${{ github.run_number }}" --whats-new="Compiled from `git log --pretty=format:%s --oneline --ancestry-path HEAD~1..HEAD`" --version-string="1.3.${{ github.run_number }}" $BUILD_ID
       - name: Submit to TestFlight
-        working-directory: "./chameleonultragui"
+        working-directory: "./nlc_toolkit"
         run: |
           export APP_STORE_CONNECT_PRIVATE_KEY=`cat AuthKey.p8`
           app-store-connect builds submit-to-testflight $BUILD_ID || true
