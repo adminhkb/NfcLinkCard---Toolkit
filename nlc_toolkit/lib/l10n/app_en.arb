@@ -1081,5 +1081,12 @@
   "nlc_copy_fetch_failed": "Could not fetch the badge.",
   "nlc_connect_reader_first": "Connect the reader first.",
   "nlc_settings_bluetooth": "Bluetooth connection",
-  "nlc_settings_bluetooth_desc": "Connect to the reader over Bluetooth instead of USB. Pair the ChameleonUltra in Windows settings first."
+  "nlc_settings_bluetooth_desc": "Connect to the reader over Bluetooth instead of USB. Pair the ChameleonUltra in Windows settings first.",
+  "nlc_simple_place_card": "Place the badge on the reader, then press Read.",
+  "nlc_simple_card_ready": "Badge extracted",
+  "nlc_step_reading": "Reading the badge\u2026",
+  "nlc_step_keys": "Checking the keys\u2026",
+  "nlc_step_recover": "Recovering the keys\u2026",
+  "nlc_step_extract": "Extracting the badge\u2026",
+  "nlc_saved_to_library": "Saved to the library"
 }

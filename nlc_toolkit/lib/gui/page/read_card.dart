@@ -2,6 +2,9 @@ import 'package:nlc_toolkit/gui/design/nlc_widgets.dart';
 import 'package:nlc_toolkit/gui/component/mifare/classic.dart';
 import 'package:nlc_toolkit/gui/component/error_message.dart';
 import 'package:nlc_toolkit/gui/component/mifare/ultralight.dart';
+import 'package:nlc_toolkit/gui/menu/pages/dump_editor.dart';
+import 'package:nlc_toolkit/gui/page/badge_dumps_ui.dart';
+import 'package:nlc_toolkit/erp/erp_services.dart';
 import 'package:nlc_toolkit/helpers/definitions.dart';
 import 'package:nlc_toolkit/helpers/general.dart';
 import 'package:nlc_toolkit/helpers/mifare_classic/general.dart';
@@ -676,6 +679,349 @@ class ReadCardPageState extends State<ReadCardPage> {
     );
   }
 
+  /* ─────────────── Mode simple : lecture guidée en un bouton ─────────────── */
+
+  /// Lit un badge HF, vérifie les clés avec le dictionnaire MCT étendu, récupère les clés
+  /// manquantes, extrait le badge, puis passe à l'état « enregistrer ». Aucune configuration :
+  /// l'utilisateur ne voit qu'une barre de progression.
+  Future<void> _readSimpleHF(
+    NlcAppState appState,
+    AppLocalizations localizations,
+  ) async {
+    if (!await _canRead(appState, localizations) || !mounted) return;
+    _readHighFrequency = true;
+    setState(() {
+      scanInProgress = true;
+      hfInfo = HFCardInfo();
+      mfcInfo = MifareClassicInfo();
+      mfuInfo = MifareUltralightInfo();
+      dumpName = "";
+    });
+    try {
+      final info = await readHFInfo(context, updateMifareClassicRecovery);
+      if (!mounted) return;
+      setState(() {
+        hfInfo = info.$1;
+        mfcInfo = info.$2;
+        mfuInfo = info.$3;
+      });
+      final recovery = mfcInfo.recovery;
+      if (isMifareClassic(hfInfo.type) && recovery != null) {
+        // Dictionnaire MCT étendu, choisi automatiquement (repli : MCT standard).
+        final dicts = appState.sharedPreferencesProvider.getDictionaries(
+          keyLength: 12,
+        );
+        recovery.dictionaries = dicts;
+        recovery.selectedDictionary = dicts.firstWhere(
+          (d) => d.id == 'mct-extended-std',
+          orElse: () => dicts.firstWhere(
+            (d) => d.id == 'mct-std',
+            orElse: () => dicts.isEmpty
+                ? Dictionary(id: '', name: '', keys: [])
+                : dicts.first,
+          ),
+        );
+
+        setState(() => mfcInfo.state = MifareClassicState.checkKeysOngoing);
+        try {
+          await recovery.checkKeys();
+        } catch (e) {
+          appState.log?.e(e.toString());
+        }
+        if (!mounted) return;
+        if (!recovery.allKeysExists) {
+          setState(() => mfcInfo.state = MifareClassicState.recoveryOngoing);
+          try {
+            await recovery.recoverKeys();
+          } catch (e) {
+            appState.log?.e(e.toString());
+          }
+          if (!mounted) return;
+        }
+        setState(() => mfcInfo.state = MifareClassicState.dumpOngoing);
+        try {
+          await recovery.dumpData();
+        } catch (e) {
+          appState.log?.e(e.toString());
+        }
+        if (!mounted) return;
+        setState(() => mfcInfo.state = MifareClassicState.save);
+      }
+    } catch (e) {
+      appState.log?.e(e.toString());
+    } finally {
+      if (mounted) setState(() => scanInProgress = false);
+    }
+  }
+
+  /// La carte reconstruite à partir du dump récupéré (ou des infos de base si ce n'est pas
+  /// une MIFARE Classic).
+  CardSave _simpleDumpCard(AppLocalizations localizations) => CardSave(
+    uid: hfInfo.uid,
+    sak: hfInfo.sak.isEmpty ? 0 : hexToBytes(hfInfo.sak)[0],
+    atqa: hfInfo.atqa.isEmpty ? Uint8List(0) : hexToBytes(hfInfo.atqa),
+    name: dumpName.isEmpty ? hfInfo.uid.replaceAll(' ', '') : dumpName,
+    tag: mfcInfo.type != MifareClassicType.none
+        ? mfClassicGetChameleonTagType(mfcInfo.type)
+        : (hfInfo.type != TagType.unknown ? hfInfo.type : TagType.mifare1K),
+    data: mfcInfo.recovery?.cardData ?? const [],
+    ats: (hfInfo.ats != localizations.no && hfInfo.ats.isNotEmpty)
+        ? hexToBytes(hfInfo.ats)
+        : Uint8List(0),
+    extraData: CardSaveExtra(
+      ultralightSignature: mfuInfo.signature,
+      ultralightVersion: mfuInfo.version,
+      ultralightCounters: [],
+    ),
+  );
+
+  Future<void> _simpleViewDump(AppLocalizations localizations) async {
+    final card = _simpleDumpCard(localizations);
+    await showDialog<void>(
+      context: context,
+      builder: (_) => DumpEditor(
+        cardSave: card,
+        onSave: (data) => mfcInfo.recovery?.cardData = data,
+      ),
+    );
+  }
+
+  Future<void> _simpleSaveToLibrary(AppLocalizations localizations) async {
+    final appState = context.read<NlcAppState>();
+    final tags = appState.sharedPreferencesProvider.getCards();
+    tags.add(_simpleDumpCard(localizations));
+    appState.sharedPreferencesProvider.setCards(tags);
+    appState.changesMade();
+    if (mounted) showNlcToast(context, localizations.nlc_saved_to_library);
+  }
+
+  void _simpleReset() {
+    setState(() {
+      hfInfo = HFCardInfo();
+      mfcInfo = MifareClassicInfo();
+      mfuInfo = MifareUltralightInfo();
+      dumpName = "";
+    });
+  }
+
+  String _simpleStepTitle(AppLocalizations localizations) =>
+      switch (mfcInfo.state) {
+        MifareClassicState.checkKeysOngoing => localizations.nlc_step_keys,
+        MifareClassicState.recoveryOngoing => localizations.nlc_step_recover,
+        MifareClassicState.dumpOngoing => localizations.nlc_step_extract,
+        _ => localizations.nlc_step_reading,
+      };
+
+  Widget _buildSimple(
+    BuildContext context,
+    NlcAppState appState,
+    AppLocalizations localizations,
+    ThemeData theme,
+    ColorScheme colors,
+    bool french,
+  ) {
+    final processing =
+        scanInProgress ||
+        const [
+          MifareClassicState.checkKeysOngoing,
+          MifareClassicState.recoveryOngoing,
+          MifareClassicState.dumpOngoing,
+        ].contains(mfcInfo.state);
+    final done =
+        !processing &&
+        (mfcInfo.state == MifareClassicState.save || hfInfo.uid.isNotEmpty);
+    final noCard = !processing && !done && !hfInfo.cardExist;
+
+    Widget panel;
+    if (processing) {
+      final recovery = mfcInfo.recovery;
+      final value =
+          (mfcInfo.state == MifareClassicState.dumpOngoing &&
+              recovery != null &&
+              recovery.dumpProgress > 0)
+          ? recovery.dumpProgress
+          : null;
+      panel = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            _simpleStepTitle(localizations),
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: colors.onSurface,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (recovery != null && recovery.state.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              recovery.state,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ],
+          const SizedBox(height: 18),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(value: value, minHeight: 8),
+          ),
+          if (value != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              '${(value * 100).round()} %',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
+      );
+    } else if (done) {
+      panel = _simpleResult(context, appState, theme, colors, localizations);
+    } else {
+      panel = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 45,
+                height: 45,
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(Icons.nfc_rounded, color: colors.primary),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  french ? 'Prêt à lire' : 'Ready to read',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: colors.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 22),
+          FilledButton.icon(
+            onPressed: () => _readSimpleHF(appState, localizations),
+            icon: const Icon(Icons.contactless_rounded),
+            label: Text(localizations.read),
+          ),
+          if (noCard) ...[
+            const SizedBox(height: 14),
+            ErrorMessage(errorMessage: localizations.no_card_found),
+          ],
+        ],
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: SingleChildScrollView(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(22, 32, 22, 48),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  NlcPageHeader(
+                    eyebrow: 'NLC Toolkit',
+                    eyebrowIcon: Icons.nfc_rounded,
+                    title: localizations.read_card,
+                    subtitle: Text(localizations.nlc_simple_place_card),
+                  ),
+                  const SizedBox(height: 28),
+                  _ReadPanel(child: panel),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _simpleResult(
+    BuildContext context,
+    NlcAppState appState,
+    ThemeData theme,
+    ColorScheme colors,
+    AppLocalizations localizations,
+  ) {
+    final canSaveToSite = context.read<ErpServices>().badgeDumps.available;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: colors.primary),
+            const SizedBox(width: 9),
+            Text(
+              localizations.nlc_simple_card_ready,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: colors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Text(
+          hfInfo.tech.isEmpty
+              ? chameleonTagToString(hfInfo.type, localizations)
+              : hfInfo.tech,
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: colors.onSurface,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 4),
+        SelectableText(
+          hfInfo.uid,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontFamily: 'monospace',
+            fontWeight: FontWeight.w600,
+            color: colors.onSurface,
+          ),
+        ),
+        const SizedBox(height: 20),
+        if (mfcInfo.type != MifareClassicType.none)
+          FilledButton.icon(
+            onPressed: () => _simpleViewDump(localizations),
+            icon: const Icon(Icons.grid_view_rounded),
+            label: Text(localizations.view_dump),
+          ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: () => _simpleSaveToLibrary(localizations),
+          icon: const Icon(Icons.bookmark_add_outlined),
+          label: Text(localizations.save),
+        ),
+        if (canSaveToSite) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () =>
+                saveCardToSite(context, _simpleDumpCard(localizations)),
+            icon: const Icon(Icons.apartment_rounded),
+            label: Text(localizations.nlc_save_to_site),
+          ),
+        ],
+        const SizedBox(height: 8),
+        TextButton.icon(
+          onPressed: _simpleReset,
+          icon: const Icon(Icons.refresh_rounded),
+          label: Text(localizations.read),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -683,6 +1029,16 @@ class ReadCardPageState extends State<ReadCardPage> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final french = Localizations.localeOf(context).languageCode == 'fr';
+    if (!appState.advancedMode) {
+      return _buildSimple(
+        context,
+        appState,
+        localizations,
+        theme,
+        colors,
+        french,
+      );
+    }
     final continuous = _readHighFrequency
         ? isContinuousHFScan
         : isContinuousLFScan;
