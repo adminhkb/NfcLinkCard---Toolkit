@@ -5,6 +5,8 @@ import 'dart:io' show Platform;
 import 'package:nlc_toolkit/bridge/chameleon.dart';
 import 'package:nlc_toolkit/connector/serial_abstract.dart';
 import 'package:nlc_toolkit/connector/serial_android.dart';
+import 'package:nlc_toolkit/connector/serial_windows_ble.dart';
+import 'package:universal_ble/universal_ble.dart' show AvailabilityState;
 import 'package:nlc_toolkit/gui/menu/dialogs/manual_connect.dart';
 import 'package:nlc_toolkit/helpers/flash.dart';
 import 'package:nlc_toolkit/helpers/general.dart';
@@ -455,6 +457,20 @@ class _ConnectPageState extends State<ConnectPage> {
     );
   }
 
+  /// Le conseil affiché dépend du transport : USB, Bluetooth, ou Bluetooth du PC coupé.
+  String _emptyStateDescription(AppLocalizations localizations) {
+    if (!Platform.isWindows) return localizations.connect_no_device_description;
+    final connector = _appState.connector;
+    if (connector is WindowsBleSerial) {
+      final availability = connector.lastAvailability;
+      if (availability != null && availability != AvailabilityState.poweredOn) {
+        return localizations.connect_bluetooth_off_description;
+      }
+      return localizations.connect_no_device_description_windows_ble;
+    }
+    return localizations.connect_no_device_description_windows;
+  }
+
   Widget _buildEmptyState(AppLocalizations localizations) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
@@ -495,9 +511,7 @@ class _ConnectPageState extends State<ConnectPage> {
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 500),
                 child: Text(
-                  Platform.isWindows
-                      ? localizations.connect_no_device_description_windows
-                      : localizations.connect_no_device_description,
+                  _emptyStateDescription(localizations),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: scheme.onSurfaceVariant,
                     height: 1.45,

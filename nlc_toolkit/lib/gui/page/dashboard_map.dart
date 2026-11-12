@@ -144,10 +144,6 @@ class _SitesMapState extends State<SitesMap> {
                       ),
                   ],
                 ),
-                const SimpleAttributionWidget(
-                  source: Text('OpenStreetMap', style: TextStyle(fontSize: 10)),
-                  backgroundColor: Color(0xCC020617),
-                ),
               ],
             ),
             if (located.length > 1)

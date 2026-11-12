@@ -4,8 +4,15 @@ import 'package:nlc_toolkit/generated/i18n/app_localizations.dart';
 /// Pages de l'application.
 enum NlcDestination {
   dashboard(Icons.home_outlined, Icons.home_rounded),
-  read(Icons.nfc_outlined, Icons.nfc_rounded, needsDevice: true),
-  write(Icons.edit_outlined, Icons.edit_rounded, needsDevice: true),
+  // En mode simple, Lire et Écrire ne sont pas des onglets : ils vivent comme des
+  // cartes sur l'accueil. Ces destinations ne restent que pour le mode avancé.
+  read(Icons.nfc_outlined, Icons.nfc_rounded, advanced: true, needsDevice: true),
+  write(
+    Icons.edit_outlined,
+    Icons.edit_rounded,
+    advanced: true,
+    needsDevice: true,
+  ),
   library(
     Icons.folder_copy_outlined,
     Icons.folder_copy_rounded,

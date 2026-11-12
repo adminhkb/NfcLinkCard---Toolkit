@@ -14,6 +14,8 @@
   "connect_no_device_title": "Aucun ChameleonUltra V2 d\u00e9tect\u00e9",
   "connect_no_device_description": "Allumez votre ChameleonUltra V2 et connectez-le par USB ou Bluetooth. V\u00e9rifiez les autorisations Bluetooth si n\u00e9cessaire, puis relancez la recherche.",
   "connect_no_device_description_windows": "Allumez votre ChameleonUltra V2, branchez-le au PC en USB, puis relancez la recherche.",
+  "connect_no_device_description_windows_ble": "Mode Bluetooth : appuyez sur un bouton du ChameleonUltra V2 pour le réveiller, vérifiez qu'il n'est pas connecté à un téléphone, appairez-le dans les réglages Bluetooth de Windows, puis relancez la recherche.",
+  "connect_bluetooth_off_description": "Le Bluetooth du PC est désactivé ou indisponible. Activez-le dans les réglages Windows, puis relancez la recherche.",
   "connect_retry_scan": "Relancer la recherche",
   "nlc_connect_title": "Connectez votre lecteur",
   "nlc_connect_subtitle": "Recherchez votre ChameleonUltra V2 en USB ou en Bluetooth.",

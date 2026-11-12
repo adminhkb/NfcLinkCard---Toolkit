@@ -4,6 +4,7 @@ import 'auth_controller.dart';
 import 'badge_stats.dart';
 import 'erp_directory.dart';
 import 'erp_http.dart';
+import 'models.dart';
 
 /// Données Badges de l'établissement actif, rechargées quand il change.
 class BadgeController extends ChangeNotifier {
@@ -76,6 +77,43 @@ class BadgeController extends ChangeNotifier {
     }
     _loading = false;
     _notify();
+  }
+
+  /// Crée un immeuble dans l'établissement actif, puis recharge les données pour qu'il
+  /// apparaisse aussitôt. Renvoie la fiche créée (ou `null` si aucun établissement).
+  Future<BadgeSite?> createSite({
+    required String name,
+    String address = '',
+    String city = '',
+    String postcode = '',
+    double? lat,
+    double? lng,
+    BadgeSiteKind kind = BadgeSiteKind.immeuble,
+    int? units,
+    String accessSystem = '',
+    BadgeCompatibility compatibility = BadgeCompatibility.inconnue,
+    bool doNotProspect = false,
+    String notes = '',
+  }) async {
+    final issuerId = _issuerId;
+    if (issuerId == null) return null;
+    final site = await _directory.createSite(
+      issuerId,
+      name: name,
+      address: address,
+      city: city,
+      postcode: postcode,
+      lat: lat,
+      lng: lng,
+      kind: kind,
+      units: units,
+      accessSystem: accessSystem,
+      compatibility: compatibility,
+      doNotProspect: doNotProspect,
+      notes: notes,
+    );
+    await refresh();
+    return site;
   }
 
   /// Recalcule les indicateurs qui dépendent de l'heure (rendez-vous en retard, mois en cours).

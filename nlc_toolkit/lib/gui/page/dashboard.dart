@@ -12,6 +12,9 @@ import 'package:nlc_toolkit/erp/badge_stats.dart';
 import 'package:nlc_toolkit/erp/erp_services.dart';
 import 'package:nlc_toolkit/erp/models.dart';
 import 'package:nlc_toolkit/generated/i18n/app_localizations.dart';
+import 'package:nlc_toolkit/gui/component/simple/inline_device_connect.dart';
+import 'package:nlc_toolkit/gui/component/simple/simple_read_card.dart';
+import 'package:nlc_toolkit/gui/component/simple/simple_write_card.dart';
 import 'package:nlc_toolkit/gui/design/nlc_theme.dart';
 import 'package:nlc_toolkit/gui/design/nlc_widgets.dart';
 import 'package:nlc_toolkit/gui/page/badge_dumps_ui.dart';
@@ -65,6 +68,8 @@ class _DashboardPageState extends State<DashboardPage> {
     final badges = context.watch<BadgeController>();
     final erp = context.read<ErpServices>();
     final navigation = context.read<NlcNavigation>();
+    final appState = context.watch<NlcAppState>();
+    final advanced = appState.advancedMode;
     final l = AppLocalizations.of(context)!;
     final issuer = auth.currentIssuer;
     final data = badges.data;
@@ -113,16 +118,20 @@ class _DashboardPageState extends State<DashboardPage> {
               ],
             ),
             actions: [
-              FilledButton.icon(
-                onPressed: () => navigation.go(NlcDestination.read),
-                icon: const Icon(Icons.nfc_rounded, size: 18),
-                label: Text(l.read_card),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => navigation.go(NlcDestination.write),
-                icon: const Icon(Icons.edit_rounded, size: 18),
-                label: Text(l.write_card),
-              ),
+              // En mode avancé, raccourcis vers les onglets Lire/Écrire ; en mode
+              // simple, ces fonctions sont des cartes plus bas sur la page.
+              if (advanced) ...[
+                FilledButton.icon(
+                  onPressed: () => navigation.go(NlcDestination.read),
+                  icon: const Icon(Icons.nfc_rounded, size: 18),
+                  label: Text(l.read_card),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => navigation.go(NlcDestination.write),
+                  icon: const Icon(Icons.edit_rounded, size: 18),
+                  label: Text(l.write_card),
+                ),
+              ],
               if (erp.config.webAppUrl.isNotEmpty)
                 OutlinedButton.icon(
                   onPressed: () => _open(Uri.parse(erp.config.webAppUrl)),
@@ -144,6 +153,30 @@ class _DashboardPageState extends State<DashboardPage> {
             ],
           ),
           const SizedBox(height: 24),
+          // Mode simple : Lire et Écrire vivent ici, en cartes, au lieu d'onglets.
+          if (!advanced) ...[
+            LayoutBuilder(
+              builder: (context, constraints) {
+                const read = SimpleReadCard();
+                const write = SimpleWriteCard();
+                if (constraints.maxWidth < 760) {
+                  return const Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [read, SizedBox(height: 16), write],
+                  );
+                }
+                return const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: read),
+                    SizedBox(width: 16),
+                    Expanded(child: write),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+          ],
           if (auth.offline)
             _StateCard(
               icon: Icons.cloud_off_rounded,
@@ -200,29 +233,6 @@ class _DashboardPageState extends State<DashboardPage> {
                   erpUrl: erp.config.webAppUrl,
                 );
                 const device = _DeviceCard();
-                if (constraints.maxWidth < 980) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      appointments,
-                      const SizedBox(height: 16),
-                      device,
-                    ],
-                  );
-                }
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 5, child: appointments),
-                    const SizedBox(width: 16),
-                    const Expanded(flex: 3, child: device),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            LayoutBuilder(
-              builder: (context, constraints) {
                 final map = SitesMap(
                   sites: data.sites,
                   summaries: overview.sites,
@@ -249,30 +259,55 @@ class _DashboardPageState extends State<DashboardPage> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      appointments,
+                      const SizedBox(height: 16),
+                      device,
+                      const SizedBox(height: 16),
                       SizedBox(height: 360, child: map),
                       const SizedBox(height: 16),
                       NlcCard(child: panel),
                     ],
                   );
                 }
-                return SizedBox(
-                  height: 480,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(flex: 2, child: map),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: NlcCard(
-                          padding: EdgeInsets.zero,
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(20),
-                            child: panel,
-                          ),
-                        ),
+                // Chaque colonne s'empile indépendamment : la carte suit directement
+                // les rendez-vous et la liste des immeubles suit directement
+                // l'appareil, sans trou entre les deux rangées.
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          appointments,
+                          const SizedBox(height: 16),
+                          SizedBox(height: 480, child: map),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          device,
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            height: 480,
+                            child: NlcCard(
+                              padding: EdgeInsets.zero,
+                              child: SingleChildScrollView(
+                                padding: const EdgeInsets.all(20),
+                                child: panel,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
@@ -634,16 +669,22 @@ class _DeviceCard extends StatelessWidget {
         children: [
           NlcSectionTitle(l.nlc_nav_device, icon: Icons.memory_rounded),
           if (!connected)
-            NlcEmptyHint(
-              icon: Icons.usb_off_rounded,
-              title: l.nlc_dash_device_missing,
-              text: l.nlc_dash_device_missing_text,
-              action: FilledButton.icon(
-                onPressed: () => navigation.go(NlcDestination.device),
-                icon: const Icon(Icons.usb_rounded, size: 18),
-                label: Text(l.nlc_connect_device),
-              ),
-            )
+            // En mode simple, la connexion se fait dans la carte, sans ouvrir d'onglet.
+            (!appState.advancedMode
+                ? const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: InlineDeviceConnect(),
+                  )
+                : NlcEmptyHint(
+                    icon: Icons.usb_off_rounded,
+                    title: l.nlc_dash_device_missing,
+                    text: l.nlc_dash_device_missing_text,
+                    action: FilledButton.icon(
+                      onPressed: () => navigation.go(NlcDestination.device),
+                      icon: const Icon(Icons.usb_rounded, size: 18),
+                      label: Text(l.nlc_connect_device),
+                    ),
+                  ))
           else ...[
             Row(
               children: [

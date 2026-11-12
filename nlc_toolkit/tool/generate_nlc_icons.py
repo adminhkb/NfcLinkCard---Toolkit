@@ -1,7 +1,11 @@
-"""Generate NLC Toolkit icon masters from one simple geometric mark.
+"""Generate NLC Toolkit icon masters from the Hkbisn ERP logo.
 
-The SVG is the editable vector reference. Run this script to refresh the PNG
-masters used by flutter_launcher_icons and the small Linux/web fallbacks.
+Composites `assets/erp-logo-source.png` (the ERP monogram, black shapes with a
+light outline on transparency) onto the dark rounded-square background used
+across platforms, then writes the PNG masters consumed by
+flutter_launcher_icons and the small Linux/web fallbacks.
+
+Run this to refresh the masters, then `dart run flutter_launcher_icons`.
 Requires Pillow (`python -m pip install pillow`).
 """
 
@@ -12,56 +16,41 @@ from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "assets"
-SIZE = 2048
-DARK = "#0E1420"
-BORDER = "#30445A"
-CYAN = "#35D1F4"
-VIOLET = "#A9A5F7"
+SOURCE = ASSETS / "erp-logo-source.png"
+CANVAS = 1024
+DARK = (0x0E, 0x14, 0x20, 255)
+BORDER = (0x30, 0x44, 0x5A, 255)
 
 
-def scaled(value: int) -> int:
-    return value * 2
+def _logo(scale: float, *, white: bool = False) -> Image.Image:
+    """The ERP logo resized to [scale] of the canvas, optionally as a white
+    silhouette (for the Android monochrome / tinted icons)."""
+    logo = Image.open(SOURCE).convert("RGBA")
+    target = int(CANVAS * scale)
+    logo = logo.resize((target, target), Image.Resampling.LANCZOS)
+    if white:
+        alpha = logo.getchannel("A")
+        logo = Image.new("RGBA", logo.size, (255, 255, 255, 0))
+        logo.putalpha(alpha)
+    return logo
 
 
-def draw_mark(image: Image.Image, *, monochrome: bool = False) -> None:
-    draw = ImageDraw.Draw(image)
-    stroke = "#FFFFFF" if monochrome else CYAN
-    points = [
-        (scaled(326), scaled(718)),
-        (scaled(326), scaled(306)),
-        (scaled(698), scaled(718)),
-        (scaled(698), scaled(306)),
-    ]
-    width = scaled(88)
-    radius = width // 2
-    draw.line(points, fill=stroke, width=width, joint="curve")
-    for x, y in points:
-        draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=stroke)
-
-    # A single contrasting node suggests a precise NFC contact point.
-    x, y = points[-1]
-    node = scaled(49)
-    draw.ellipse(
-        (x - node, y - node, x + node, y + node),
-        fill="#FFFFFF" if monochrome else VIOLET,
-    )
-
-
-def render(background: bool = True, *, monochrome: bool = False) -> Image.Image:
-    image = Image.new("RGBA", (SIZE, SIZE), DARK if background else (0, 0, 0, 0))
+def render(
+    background: bool = True, *, monochrome: bool = False, scale: float = 0.72
+) -> Image.Image:
+    image = Image.new("RGBA", (CANVAS, CANVAS), DARK if background else (0, 0, 0, 0))
     if background:
-        draw = ImageDraw.Draw(image)
-        draw.rounded_rectangle(
-            (scaled(56), scaled(56), scaled(968), scaled(968)),
-            radius=scaled(198),
-            outline=BORDER,
-            width=scaled(18),
+        ImageDraw.Draw(image).rounded_rectangle(
+            (56, 56, 968, 968), radius=198, outline=BORDER, width=18
         )
-    draw_mark(image, monochrome=monochrome)
-    return image.resize((1024, 1024), Image.Resampling.LANCZOS)
+    logo = _logo(scale, white=monochrome)
+    image.alpha_composite(
+        logo, ((CANVAS - logo.width) // 2, (CANVAS - logo.height) // 2)
+    )
+    return image
 
 
-def save_png(image: Image.Image, path: Path, size: int = 1024) -> None:
+def save_png(image: Image.Image, path: Path, size: int = CANVAS) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if image.size != (size, size):
         image = image.resize((size, size), Image.Resampling.LANCZOS)
@@ -69,20 +58,11 @@ def save_png(image: Image.Image, path: Path, size: int = 1024) -> None:
 
 
 def main() -> None:
-    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="NLC Toolkit icon">
-  <rect width="1024" height="1024" fill="{DARK}"/>
-  <rect x="56" y="56" width="912" height="912" rx="198" fill="none" stroke="{BORDER}" stroke-width="18"/>
-  <path d="M326 718V306L698 718V306" fill="none" stroke="{CYAN}" stroke-width="88" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="698" cy="306" r="49" fill="{VIOLET}"/>
-</svg>
-'''
-    (ASSETS / "nlc-icon.svg").write_text(svg, encoding="utf-8")
-
     icon = render()
-    foreground = render(False)
-    monochrome = render(False, monochrome=True)
-    background = Image.new("RGB", (1024, 1024), DARK)
+    foreground = render(False, scale=0.60)
+    monochrome = render(False, monochrome=True, scale=0.60)
     grayscale = render(monochrome=True)
+    background = Image.new("RGB", (CANVAS, CANVAS), DARK[:3])
 
     save_png(icon, ASSETS / "logo.png")
     save_png(icon, ASSETS / "logo-color-desktop.png")

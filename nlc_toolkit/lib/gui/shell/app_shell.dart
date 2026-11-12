@@ -110,6 +110,8 @@ class _AppShellState extends State<AppShell> {
 
     final connector = appState.connector!;
     final flashing = connector.connected && connector.isDFU;
+    // En mode simple, pas de barre latérale : tout se passe sur l'accueil.
+    final advanced = appState.advancedMode;
     final page = _page(navigation.current, appState, l);
     try {
       WakelockPlus.toggle(enable: flashing);
@@ -130,13 +132,13 @@ class _AppShellState extends State<AppShell> {
         return Scaffold(
           key: _scaffoldKey,
           backgroundColor: Nlc.canvas,
-          drawer: wide || flashing
+          drawer: (wide || flashing || !advanced)
               ? null
               : Drawer(child: SafeArea(child: sidebar)),
           body: SafeArea(
             child: Row(
               children: [
-                if (wide && !flashing)
+                if (wide && !flashing && advanced)
                   const DecoratedBox(
                     decoration: BoxDecoration(
                       color: Nlc.slate950,
@@ -151,7 +153,7 @@ class _AppShellState extends State<AppShell> {
                   child: Column(
                     children: [
                       _Header(
-                        showMenu: !wide && !flashing,
+                        showMenu: !wide && !flashing && advanced,
                         onMenu: () => _scaffoldKey.currentState?.openDrawer(),
                       ),
                       if (flashing)
@@ -206,7 +208,6 @@ class _Sidebar extends StatelessWidget {
     final auth = context.watch<AuthController>();
     final navigation = context.watch<NlcNavigation>();
     final l = AppLocalizations.of(context)!;
-    final prefs = appState.sharedPreferencesProvider;
     final advanced = appState.advancedMode;
     final issuer = auth.currentIssuer;
     final accent = Nlc.accentFor(issuer?.colorTheme ?? 'indigo');
@@ -254,37 +255,7 @@ class _Sidebar extends StatelessWidget {
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 6),
-                child: Text(
-                  l.nlc_mode_label.toUpperCase(),
-                  style: const TextStyle(
-                    color: Nlc.slate500,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-              NlcSegmented<bool>(
-                value: advanced,
-                options: [
-                  (value: false, label: l.nlc_mode_simple, icon: null),
-                  (value: true, label: l.nlc_mode_advanced, icon: null),
-                ],
-                onChanged: (value) {
-                  prefs.setAdvancedMode(value);
-                  appState.changesMade();
-                },
-              ),
-            ],
-          ),
-        ),
+        // Le choix Simple/Avancé vit désormais uniquement dans les Réglages.
         Container(
           padding: const EdgeInsets.all(16),
           decoration: const BoxDecoration(
@@ -412,10 +383,17 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
+    final appState = context.watch<NlcAppState>();
+    final navigation = context.watch<NlcNavigation>();
     final l = AppLocalizations.of(context)!;
+    // En mode simple il n'y a pas de barre latérale : un bouton d'en-tête ramène
+    // à l'accueil depuis les Paramètres.
+    final showHome =
+        !appState.advancedMode &&
+        navigation.current != NlcDestination.dashboard;
     return Container(
       height: _headerHeight,
-      padding: EdgeInsets.only(left: showMenu ? 4 : 24, right: 16),
+      padding: EdgeInsets.only(left: (showMenu || showHome) ? 4 : 24, right: 16),
       decoration: const BoxDecoration(
         color: Nlc.slate950,
         border: Border(bottom: BorderSide(color: Nlc.border)),
@@ -438,6 +416,15 @@ class _Header extends StatelessWidget {
                   const NlcBrand(size: 16),
                   const SizedBox(width: 12),
                 ],
+              ],
+              if (showHome) ...[
+                IconButton(
+                  tooltip: l.home,
+                  icon: const Icon(Icons.home_rounded),
+                  onPressed: () =>
+                      navigation.go(NlcDestination.dashboard),
+                ),
+                const SizedBox(width: 4),
               ],
               _DeviceChip(showLabel: roomy),
               if (auth.offline) ...[
@@ -494,6 +481,11 @@ class _DeviceChip extends StatelessWidget {
     final l = AppLocalizations.of(context)!;
     final connector = appState.connector;
     final connected = connector?.connected ?? false;
+    // En mode simple, la connexion vit sur l'accueil : on y renvoie plutôt que
+    // d'ouvrir l'onglet Appareil.
+    final deviceTarget = appState.advancedMode
+        ? NlcDestination.device
+        : NlcDestination.dashboard;
     final label = connected
         ? 'Chameleon ${chameleonDeviceName(connector!.device)}'
         : l.nlc_device_none;
@@ -504,7 +496,7 @@ class _DeviceChip extends StatelessWidget {
             : l.nlc_connect_device,
         child: InkWell(
           borderRadius: BorderRadius.circular(Nlc.radius),
-          onTap: () => context.read<NlcNavigation>().go(NlcDestination.device),
+          onTap: () => context.read<NlcNavigation>().go(deviceTarget),
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: Row(
@@ -530,7 +522,7 @@ class _DeviceChip extends StatelessWidget {
       message: connected ? connector!.portName : l.nlc_connect_device,
       child: InkWell(
         borderRadius: BorderRadius.circular(Nlc.radius),
-        onTap: () => context.read<NlcNavigation>().go(NlcDestination.device),
+        onTap: () => context.read<NlcNavigation>().go(deviceTarget),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(

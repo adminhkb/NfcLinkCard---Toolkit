@@ -43,34 +43,72 @@ class WindowsBleSerial extends AbstractSerial {
   @override
   bool isManualConnectionSupported() => false;
 
+  /// Durée d'une recherche : Windows remonte les annonces lentement, 2 s ne suffisaient pas.
+  static const Duration _scanDuration = Duration(seconds: 5);
+
+  /// Dernier état connu de l'adaptateur Bluetooth du PC (affiché par la page de connexion).
+  AvailabilityState? lastAvailability;
+
+  /// Reconnaît un Chameleon à son nom, ou à défaut au service Nordic UART qu'il annonce.
+  ChameleonDevice? _kindOf(BleDevice device) {
+    final name = (device.name ?? device.rawName ?? '').toLowerCase();
+    if (name.contains('chameleonlite') || name.contains('chameleon lite')) {
+      return ChameleonDevice.lite;
+    }
+    if (name.contains('chameleon')) return ChameleonDevice.ultra;
+    final advertisesNus = device.services.any(
+      (service) => service.toUpperCase() == _nusService,
+    );
+    // Service NUS sans nom (annonce partielle) : c'est presque toujours un Ultra.
+    return advertisesNus ? ChameleonDevice.ultra : null;
+  }
+
+  void _remember(BleDevice device) {
+    final kind = _kindOf(device);
+    if (kind == null) return;
+    _found[device.deviceId] = Chameleon(
+      port: device.deviceId,
+      device: kind,
+      type: ConnectionType.ble,
+      dfu: false,
+    );
+  }
+
   @override
   Future<List<Chameleon>> availableChameleons(bool onlyDFU) async {
     // Le DFU (mise à jour du firmware) n'est pas proposé en Bluetooth sur PC pour l'instant.
-    if (onlyDFU || _scanning) return [];
+    if (onlyDFU) return [];
+    // Une recherche est déjà en cours (scan automatique) : on renvoie le dernier résultat
+    // plutôt qu'une liste vide qui ferait « disparaître » l'appareil de l'écran.
+    if (_scanning) return _found.values.toList();
+    // Déjà connecté : l'appareil n'émet plus d'annonces, inutile de chercher.
+    if (_connectedId != null) return _found.values.toList();
 
-    _found.clear();
     _scanning = true;
-    UniversalBle.onScanResult = (device) {
-      final name = device.name ?? '';
-      final kind = name.startsWith('ChameleonUltra')
-          ? ChameleonDevice.ultra
-          : name.startsWith('ChameleonLite')
-          ? ChameleonDevice.lite
-          : null;
-      if (kind == null) return;
-      _found[device.deviceId] = Chameleon(
-        port: device.deviceId,
-        device: kind,
-        type: ConnectionType.ble,
-        dfu: false,
-      );
-    };
+    _found.clear();
 
     try {
-      await UniversalBle.startScan(
-        scanFilter: ScanFilter(withServices: const [_nusService]),
-      );
-      await Future.delayed(const Duration(seconds: 2));
+      lastAvailability = await UniversalBle.getBluetoothAvailabilityState();
+      if (lastAvailability != AvailabilityState.poweredOn) {
+        log.w('Bluetooth du PC indisponible : $lastAvailability');
+        return [];
+      }
+
+      // 1) Appareils déjà appairés et connectés à Windows : un Chameleon connecté au système
+      //    cesse d'émettre des annonces, il n'apparaîtrait donc jamais dans un scan.
+      try {
+        for (final device in await UniversalBle.getSystemDevices()) {
+          _remember(device);
+        }
+      } catch (error) {
+        log.w('Liste des appareils Bluetooth du système illisible : $error');
+      }
+
+      // 2) Scan sans filtre natif : le filtre par service écartait le Chameleon quand
+      //    l'identifiant NUS n'était que dans la réponse de scan. On trie nous-mêmes par nom.
+      UniversalBle.onScanResult = _remember;
+      await UniversalBle.startScan();
+      await Future.delayed(_scanDuration);
     } catch (error) {
       log.e('Recherche Bluetooth impossible : $error');
     } finally {

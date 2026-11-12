@@ -93,6 +93,44 @@ class ErpDirectory {
     );
   }
 
+  /// Crée un immeuble sous `issuers/{issuerId}/badge_sites`, avec les mêmes champs que
+  /// l'ERP (src/components/badges/badgeStore.ts → writeSite). Renvoie la fiche créée.
+  Future<BadgeSite> createSite(
+    String issuerId, {
+    required String name,
+    String address = '',
+    String city = '',
+    String postcode = '',
+    double? lat,
+    double? lng,
+    BadgeSiteKind kind = BadgeSiteKind.immeuble,
+    int? units,
+    String accessSystem = '',
+    BadgeCompatibility compatibility = BadgeCompatibility.inconnue,
+    bool doNotProspect = false,
+    String notes = '',
+  }) async {
+    final now = _now();
+    final doc = await _firestore.createDocument('issuers/$issuerId/badge_sites', {
+      'name': name,
+      'address': address,
+      'city': city,
+      'postcode': postcode,
+      'lat': lat,
+      'lng': lng,
+      'kind': kind.key,
+      'units': units,
+      'accessSystem': accessSystem,
+      'compatibility': compatibility.key,
+      'doNotProspect': doNotProspect,
+      'notes': notes,
+      // L'ERP écrit un serverTimestamp ; ici l'heure de l'appareil suffit (lue comme createdAt).
+      'createdAt': now,
+      'updatedAt': now,
+    });
+    return BadgeSite.fromDoc(doc);
+  }
+
   /// Les fiches sans nom sont des brouillons que l'ERP n'affiche pas non plus.
   List<Issuer> _named(List<FirestoreDoc> docs) {
     final byId = <String, Issuer>{};
