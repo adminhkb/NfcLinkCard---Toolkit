@@ -45,7 +45,6 @@ class ToggleButtonsState extends State<ToggleButtonsWrapper> {
             });
             await widget.onChange(index);
           },
-          borderRadius: const BorderRadius.all(Radius.circular(32)),
           constraints: const BoxConstraints(
             minHeight: 40.0,
             minWidth: 80.0,

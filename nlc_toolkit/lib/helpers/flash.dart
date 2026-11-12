@@ -80,7 +80,7 @@ void validateFiles(Uint8List dat, Uint8List bin) {
   }
 }
 
-Future<void> flashFirmware(ChameleonGUIState appState,
+Future<void> flashFirmware(NlcAppState appState,
     {ScaffoldMessengerState? scaffoldMessenger,
     ChameleonDevice? device,
     bool enterDFU = true}) async {
@@ -98,7 +98,7 @@ Future<void> flashFirmware(ChameleonGUIState appState,
       enterDFU: enterDFU);
 }
 
-Future<void> flashFirmwareZip(ChameleonGUIState appState,
+Future<void> flashFirmwareZip(NlcAppState appState,
     {ScaffoldMessengerState? scaffoldMessenger, bool enterDFU = true}) async {
   Uint8List applicationDat, applicationBin;
 
@@ -120,7 +120,7 @@ Future<void> flashFirmwareZip(ChameleonGUIState appState,
 
 Future<void> flashFile(
     ChameleonCommunicator? connection,
-    ChameleonGUIState appState,
+    NlcAppState appState,
     Uint8List applicationDat,
     Uint8List applicationBin,
     void Function(int progress) callback,

@@ -1,3 +1,4 @@
+import 'package:nlc_toolkit/gui/design/nlc_widgets.dart';
 import 'package:nlc_toolkit/connector/serial_abstract.dart';
 import 'package:nlc_toolkit/gui/component/card_list.dart';
 import 'package:nlc_toolkit/gui/component/mifare/mct_write_panel.dart';
@@ -33,7 +34,7 @@ class WriteCardPageState extends State<WriteCardPage> {
   AbstractWriteHelper? helper;
 
   Future<String?> cardSelectDialog(BuildContext context) {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     var tags = appState.sharedPreferencesProvider.getCards();
 
     tags.sort((a, b) => a.name.compareTo(b.name));
@@ -49,7 +50,7 @@ class WriteCardPageState extends State<WriteCardPage> {
     dynamic close,
     AppLocalizations localizations,
   ) async {
-    var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+    var appState = Provider.of<NlcAppState>(context, listen: false);
 
     setState(() {
       card = selectedCard;
@@ -79,7 +80,7 @@ class WriteCardPageState extends State<WriteCardPage> {
   }
 
   Future<void> detectMagicType() async {
-    var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+    var appState = Provider.of<NlcAppState>(context, listen: false);
     var scaffoldMessenger = ScaffoldMessenger.of(context);
     var localizations = AppLocalizations.of(context)!;
 
@@ -134,7 +135,7 @@ class WriteCardPageState extends State<WriteCardPage> {
   }
 
   Future<void> writeCard() async {
-    var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+    var appState = Provider.of<NlcAppState>(context, listen: false);
     var scaffoldMessenger = ScaffoldMessenger.of(context);
     var localizations = AppLocalizations.of(context)!;
     SnackBar snackBar;
@@ -172,7 +173,7 @@ class WriteCardPageState extends State<WriteCardPage> {
   void onStepContinue() async {
     var localizations = AppLocalizations.of(context)!;
     var scaffoldMessenger = ScaffoldMessenger.of(context);
-    var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+    var appState = Provider.of<NlcAppState>(context, listen: false);
 
     if (appState.connector!.device == ChameleonDevice.lite) {
       showDialog<String>(
@@ -313,54 +314,23 @@ class WriteCardPageState extends State<WriteCardPage> {
     };
 
     final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: Text(localizations.write_card)),
+      backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 900),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+              padding: const EdgeInsets.fromLTRB(22, 32, 22, 48),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withValues(alpha: 0.13),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Icon(
-                          Icons.edit_note_rounded,
-                          color: colorScheme.primary,
-                          size: 27,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              localizations.basic_write_title,
-                              style: textTheme.headlineSmall,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              localizations.basic_write_description,
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  NlcPageHeader(
+                    eyebrow: 'NLC Toolkit',
+                    eyebrowIcon: Icons.edit_rounded,
+                    title: localizations.basic_write_title,
+                    subtitle: Text(localizations.basic_write_description),
                   ),
                   const SizedBox(height: 20),
                   const MctWritePanel(),

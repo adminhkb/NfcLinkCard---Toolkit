@@ -38,7 +38,7 @@ class DictionaryEditMenuState extends State<DictionaryEditMenu> {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<ChameleonGUIState>();
+    var appState = context.watch<NlcAppState>();
     var localizations = AppLocalizations.of(context)!;
     return AlertDialog(
       title: Text(

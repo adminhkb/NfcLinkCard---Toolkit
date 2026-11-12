@@ -610,7 +610,7 @@ Future<(TagType, MifareClassicInfo)> performMifareClassicScan(
     BuildContext context,
     dynamic updateMifareClassicRecovery,
     {TagType? override}) async {
-  var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+  var appState = Provider.of<NlcAppState>(context, listen: false);
   var localizations = AppLocalizations.of(context)!;
   MifareClassicType mifareClassicType;
 

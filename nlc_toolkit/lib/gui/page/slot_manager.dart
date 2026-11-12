@@ -1,3 +1,4 @@
+import 'package:nlc_toolkit/gui/design/nlc_widgets.dart';
 import 'package:nlc_toolkit/connector/serial_abstract.dart';
 import 'package:nlc_toolkit/gui/component/card_list.dart';
 import 'package:nlc_toolkit/gui/component/error_page.dart';
@@ -44,7 +45,7 @@ class SlotManagerPageState extends State<SlotManagerPage> {
       return;
     }
 
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     var localizations = AppLocalizations.of(context)!;
 
     usedSlots = await appState.communicator!.getSlotTagTypes();
@@ -61,7 +62,7 @@ class SlotManagerPageState extends State<SlotManagerPage> {
     _slotLoadFuture = null;
     setUploadState(-1);
 
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     appState.changesMade();
   }
 
@@ -70,7 +71,7 @@ class SlotManagerPageState extends State<SlotManagerPage> {
       progress = progressBar;
     });
 
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     appState.changesMade();
   }
 
@@ -79,7 +80,7 @@ class SlotManagerPageState extends State<SlotManagerPage> {
     dynamic close,
     AppLocalizations localizations,
   ) async {
-    var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+    var appState = Provider.of<NlcAppState>(context, listen: false);
 
     if (isMifareClassic(card.tag)) {
       close(context, card.name);
@@ -392,7 +393,7 @@ class SlotManagerPageState extends State<SlotManagerPage> {
   }
 
   Future<String?> cardSelectDialog(BuildContext context) {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     var tags = appState.sharedPreferencesProvider.getCards();
 
     // Don't allow user to upload more tags while already uploading dump
@@ -547,7 +548,7 @@ class SlotManagerPageState extends State<SlotManagerPage> {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<ChameleonGUIState>();
+    final appState = context.watch<NlcAppState>();
     final localizations = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
@@ -555,12 +556,7 @@ class SlotManagerPageState extends State<SlotManagerPage> {
     final bluetooth = connector.connectionType == ConnectionType.ble;
 
     return Scaffold(
-      backgroundColor: scheme.surface,
-      appBar: AppBar(
-        backgroundColor: scheme.surface,
-        surfaceTintColor: Colors.transparent,
-        title: Text(localizations.slot_manager),
-      ),
+      backgroundColor: Colors.transparent,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1180),
@@ -575,20 +571,11 @@ class SlotManagerPageState extends State<SlotManagerPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      localizations.slots,
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontSize: compact ? 30 : 36,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1,
-                      ),
-                    ),
-                    const SizedBox(height: 7),
-                    Text(
-                      localizations.slot_manager_description,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
+                    NlcPageHeader(
+                      eyebrow: localizations.nlc_nav_device,
+                      eyebrowIcon: Icons.view_carousel_rounded,
+                      title: localizations.slot_manager,
+                      subtitle: Text(localizations.slot_manager_description),
                     ),
                     const SizedBox(height: 22),
                     Container(

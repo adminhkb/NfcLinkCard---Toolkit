@@ -43,7 +43,7 @@ class DictionaryExportMenuState extends State<DictionaryExportMenu> {
 
   Future<String?> dictionarySelectDialog(
       BuildContext context, List<Uint8List> keys) {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     var dicts = appState.sharedPreferencesProvider.getDictionaries();
 
     dicts.sort((a, b) => a.name.compareTo(b.name));
@@ -220,7 +220,7 @@ class DictSearchDelegate extends SearchDelegate<String> {
     final results = dicts
         .where((dict) => dict.name.toLowerCase().contains(query.toLowerCase()));
 
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     return ListView.builder(
       itemCount: results.length,
       itemBuilder: (BuildContext context, int index) {

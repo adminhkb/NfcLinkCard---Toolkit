@@ -53,7 +53,7 @@ class _LfSniffingMenuState extends State<LfSniffingMenu> {
   }
 
   Future<void> _loadCapabilities() async {
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
     if (appState.communicator == null) {
       return;
     }
@@ -77,7 +77,7 @@ class _LfSniffingMenuState extends State<LfSniffingMenu> {
   }
 
   bool _isDeviceConnected() {
-    return context.read<ChameleonGUIState>().communicator != null;
+    return context.read<NlcAppState>().communicator != null;
   }
 
   Future<void> _captureLfSamples() async {
@@ -87,7 +87,7 @@ class _LfSniffingMenuState extends State<LfSniffingMenu> {
     }
 
     final timeoutMs = int.parse(_timeoutController.text);
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
 
     setState(() {
       _isCapturing = true;

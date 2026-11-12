@@ -85,7 +85,7 @@ class ElementButtonState extends State<ElementButton> {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final iconColor = widget.onPressed == null

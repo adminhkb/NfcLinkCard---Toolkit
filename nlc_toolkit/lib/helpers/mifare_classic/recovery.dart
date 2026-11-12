@@ -27,7 +27,7 @@ extension PartitionList<E> on List<E> {
 enum ChameleonKeyCheckmark { none, found, checking, disabled }
 
 class MifareClassicRecovery {
-  late ChameleonGUIState appState;
+  late NlcAppState appState;
   late AppLocalizations localizations;
   String error;
   String state;

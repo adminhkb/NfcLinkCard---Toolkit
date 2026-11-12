@@ -1,4 +1,4 @@
-param(
+﻿param(
     [switch]$SkipBuild
 )
 
@@ -14,9 +14,14 @@ if (-not $SkipBuild) {
     if (-not (Test-Path -LiteralPath $flutter)) {
         throw 'Flutter introuvable. Ajoutez flutter au PATH ou installez-le dans ~/develop/flutter.'
     }
+    # La liaison ERP est fournie à la compilation : sans ce fichier, l'application ne peut pas se connecter.
+    $erpConfig = Join-Path $projectRoot 'config\erp.json'
+    if (-not (Test-Path -LiteralPath $erpConfig)) {
+        throw "Configuration ERP introuvable : $erpConfig. Créez-la à partir de config\erp.example.json."
+    }
     Push-Location $projectRoot
     try {
-        & $flutter build windows --release
+        & $flutter build windows --release --dart-define-from-file=config/erp.json
         if ($LASTEXITCODE -ne 0) {
             throw "La compilation Windows a échoué (code $LASTEXITCODE)."
         }
@@ -39,7 +44,7 @@ $bundleName = 'NLC-Toolkit-Windows-x64-' + (Get-Date -Format 'yyyyMMdd-HHmmss')
 $bundlePath = Join-Path $distPath $bundleName
 New-Item -ItemType Directory -Path $bundlePath | Out-Null
 Copy-Item -Path (Join-Path $releasePath '*') -Destination $bundlePath -Recurse -Force
-$licensePath = Join-Path $projectRoot '..\LICENSE'
+$licensePath = Join-Path $projectRoot 'LICENSE'
 if (Test-Path -LiteralPath $licensePath) {
     Copy-Item -LiteralPath $licensePath -Destination (Join-Path $bundlePath 'LICENSE')
 }

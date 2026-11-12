@@ -93,7 +93,7 @@ BEGIN
             VALUE "FileDescription", "NLC Toolkit" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "nlc_toolkit" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2023 Chameleon Development. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2023-2026 NLC Toolkit contributors. GNU GPL v3." "\0"
             VALUE "OriginalFilename", "nlc_toolkit.exe" "\0"
             VALUE "ProductName", "NLC Toolkit" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"

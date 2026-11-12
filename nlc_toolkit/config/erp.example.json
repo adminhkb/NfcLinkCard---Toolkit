@@ -1,0 +1,7 @@
+{
+  "NLC_ERP_PROJECT_ID": "identifiant-du-projet-firebase",
+  "NLC_ERP_API_KEY": "cle-api-web-du-projet",
+  "NLC_ERP_REGION": "us-central1",
+  "NLC_ERP_STORAGE_BUCKET": "identifiant-du-projet-firebase.firebasestorage.app",
+  "NLC_ERP_WEB_URL": "https://erp.exemple.fr"
+}

@@ -41,7 +41,7 @@ class T55XXPasswordCleanerMenuState extends State<T55XXPasswordCleanerMenu> {
   Future<void> _startPasswordReset() async {
     if (selectedDictionaryId == null) return;
 
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     List<Dictionary> dictionaries =
         appState.sharedPreferencesProvider.getDictionaries(keyLength: 8);
     Dictionary? selectedDictionary =
@@ -157,7 +157,7 @@ class T55XXPasswordCleanerMenuState extends State<T55XXPasswordCleanerMenu> {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<ChameleonGUIState>();
+    var appState = context.watch<NlcAppState>();
     var localizations = AppLocalizations.of(context)!;
 
     List<Dictionary> dictionaries =

@@ -20,7 +20,7 @@ class ManualConnectState extends State<ManualConnect> {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<ChameleonGUIState>();
+    var appState = context.watch<NlcAppState>();
     var localizations = AppLocalizations.of(context)!;
 
     return AlertDialog(

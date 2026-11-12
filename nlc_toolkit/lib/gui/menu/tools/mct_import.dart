@@ -33,7 +33,7 @@ class _MctImportMenuState extends State<MctImportMenu> {
 
   Future<void> _pickAndImport() async {
     final localizations = AppLocalizations.of(context)!;
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
     setState(() => _busy = true);
     try {
       // Any file type: MCT dumps are often saved without the .mct extension,

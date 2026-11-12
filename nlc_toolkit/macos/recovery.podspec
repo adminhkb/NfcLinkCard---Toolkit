@@ -10,7 +10,7 @@ Pod::Spec.new do |s|
 Binding for crapto1 key recovery library for Mifare Classic
                        DESC
   s.homepage         = 'http://example.com'
-  s.license          = { :type => 'GNU GPLv3',:file => '../../LICENSE' }
+  s.license          = { :type => 'GNU GPLv3',:file => '../LICENSE' }
   s.author           = { 'Foxushka' => 'fox@localhost' }
 
   # This will ensure the source files in Classes/ are included in the native

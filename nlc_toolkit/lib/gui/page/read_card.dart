@@ -1,3 +1,4 @@
+import 'package:nlc_toolkit/gui/design/nlc_widgets.dart';
 import 'package:nlc_toolkit/gui/component/mifare/classic.dart';
 import 'package:nlc_toolkit/gui/component/error_message.dart';
 import 'package:nlc_toolkit/gui/component/mifare/ultralight.dart';
@@ -115,7 +116,7 @@ class ReadCardPageState extends State<ReadCardPage> {
   }
 
   Future<void> readLFInfo() async {
-    var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+    var appState = Provider.of<NlcAppState>(context, listen: false);
 
     setState(() {
       lfInfo = LFCardInfo();
@@ -260,7 +261,7 @@ class ReadCardPageState extends State<ReadCardPage> {
   }
 
   Future<void> saveHFCard() async {
-    var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+    var appState = Provider.of<NlcAppState>(context, listen: false);
     var localizations = AppLocalizations.of(context)!;
 
     var tags = appState.sharedPreferencesProvider.getCards();
@@ -287,7 +288,7 @@ class ReadCardPageState extends State<ReadCardPage> {
   }
 
   Future<void> saveLFCard() async {
-    var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+    var appState = Provider.of<NlcAppState>(context, listen: false);
 
     var tags = appState.sharedPreferencesProvider.getCards();
     tags.add(
@@ -319,7 +320,7 @@ class ReadCardPageState extends State<ReadCardPage> {
   }
 
   Future<bool> _canRead(
-    ChameleonGUIState appState,
+    NlcAppState appState,
     AppLocalizations localizations,
   ) async {
     if (appState.connector?.device == ChameleonDevice.ultra) {
@@ -334,7 +335,7 @@ class ReadCardPageState extends State<ReadCardPage> {
   }
 
   Future<void> _readSelectedCard(
-    ChameleonGUIState appState,
+    NlcAppState appState,
     AppLocalizations localizations,
   ) async {
     if (!await _canRead(appState, localizations) || !mounted) return;
@@ -366,7 +367,7 @@ class ReadCardPageState extends State<ReadCardPage> {
   }
 
   Future<void> _toggleContinuousScan(
-    ChameleonGUIState appState,
+    NlcAppState appState,
     AppLocalizations localizations,
   ) async {
     if (_readHighFrequency && isContinuousHFScan) {
@@ -425,7 +426,7 @@ class ReadCardPageState extends State<ReadCardPage> {
   }
 
   Future<void> _showCardTypeDialog(
-    ChameleonGUIState appState,
+    NlcAppState appState,
     AppLocalizations localizations,
   ) async {
     await showDialog<void>(
@@ -522,7 +523,7 @@ class ReadCardPageState extends State<ReadCardPage> {
 
   Widget _buildResult(
     BuildContext context,
-    ChameleonGUIState appState,
+    NlcAppState appState,
     AppLocalizations localizations,
     bool french,
   ) {
@@ -678,7 +679,7 @@ class ReadCardPageState extends State<ReadCardPage> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final appState = context.watch<ChameleonGUIState>();
+    final appState = context.watch<NlcAppState>();
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final french = Localizations.localeOf(context).languageCode == 'fr';
@@ -692,7 +693,7 @@ class ReadCardPageState extends State<ReadCardPage> {
     final noCard = _readHighFrequency ? !hfInfo.cardExist : !lfInfo.cardExist;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
         child: Center(
           child: ConstrainedBox(
@@ -702,30 +703,14 @@ class ReadCardPageState extends State<ReadCardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'NLC TOOLKIT  /  ${french ? 'LECTURE' : 'READ'}',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colors.primary,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    localizations.read_card,
-                    style: theme.textTheme.headlineLarge?.copyWith(
-                      color: colors.onSurface,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    french
-                        ? 'Choisissez une fréquence, puis placez la carte contre le ChameleonUltra V2.'
-                        : 'Choose a frequency, then place the card against the ChameleonUltra V2.',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: colors.onSurfaceVariant,
+                  NlcPageHeader(
+                    eyebrow: 'NLC Toolkit',
+                    eyebrowIcon: Icons.nfc_rounded,
+                    title: localizations.read_card,
+                    subtitle: Text(
+                      french
+                          ? 'Choisissez une fréquence, puis placez la carte contre le ChameleonUltra V2.'
+                          : 'Choose a frequency, then place the card against the ChameleonUltra V2.',
                     ),
                   ),
                   const SizedBox(height: 28),

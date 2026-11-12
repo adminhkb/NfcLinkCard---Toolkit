@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:nlc_toolkit/generated/i18n/app_localizations.dart';
+import 'package:nlc_toolkit/gui/design/nlc_widgets.dart';
 import 'package:nlc_toolkit/gui/menu/tools/bcc_calculator.dart';
 import 'package:nlc_toolkit/gui/menu/tools/dictionary_download.dart';
 import 'package:nlc_toolkit/gui/menu/tools/hf_sniffing.dart';
@@ -6,7 +8,6 @@ import 'package:nlc_toolkit/gui/menu/tools/lf_sniffing.dart';
 import 'package:nlc_toolkit/gui/menu/tools/mct_import.dart';
 import 'package:nlc_toolkit/gui/menu/tools/t55xx_password_cleaner.dart';
 import 'package:nlc_toolkit/main.dart';
-import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class ToolItem {
@@ -14,7 +15,6 @@ class ToolItem {
   final String description;
   final IconData icon;
   final bool isDeviceRequired;
-  final bool showWipBadge;
   final Widget? onPressed;
 
   ToolItem({
@@ -22,7 +22,6 @@ class ToolItem {
     required this.description,
     required this.icon,
     this.isDeviceRequired = false,
-    this.showWipBadge = false,
     this.onPressed,
   });
 }
@@ -37,10 +36,11 @@ class ToolsPage extends StatefulWidget {
 class ToolsPageState extends State<ToolsPage> {
   @override
   Widget build(BuildContext context) {
-    var appState = context.read<ChameleonGUIState>();
-    var localizations = AppLocalizations.of(context)!;
+    final appState = context.watch<NlcAppState>();
+    final localizations = AppLocalizations.of(context)!;
+    final connected = appState.connector?.connected ?? false;
 
-    List<ToolItem> tools = [
+    final tools = [
       ToolItem(
         name: localizations.bcc_calculator,
         description: localizations.bcc_calculator_description,
@@ -87,135 +87,51 @@ class ToolsPageState extends State<ToolsPage> {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: Text(localizations.tools)),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final colors = Theme.of(context).colorScheme;
-          return SingleChildScrollView(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1000),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        localizations.tools,
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        localizations.tools_description,
-                        style: TextStyle(color: colors.onSurfaceVariant),
-                      ),
-                      const SizedBox(height: 22),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: constraints.maxWidth >= 880 ? 2 : 1,
-                          crossAxisSpacing: 14,
-                          mainAxisSpacing: 14,
-                          mainAxisExtent: 148,
+      backgroundColor: Colors.transparent,
+      body: NlcPageBody(
+        maxWidth: 1080,
+        children: [
+          NlcPageHeader(
+            eyebrow: 'NLC Toolkit',
+            eyebrowIcon: Icons.construction_rounded,
+            title: localizations.tools,
+            subtitle: Text(localizations.tools_description),
+          ),
+          const SizedBox(height: 24),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = constraints.maxWidth >= 760 ? 2 : 1;
+              final width =
+                  (constraints.maxWidth - (columns - 1) * 14) / columns;
+              return Wrap(
+                spacing: 14,
+                runSpacing: 14,
+                children: [
+                  for (final tool in tools)
+                    SizedBox(
+                      width: width,
+                      child: NlcActionTile(
+                        icon: tool.icon,
+                        title: tool.name,
+                        description: tool.description,
+                        // Outil pas encore disponible, ou lecteur absent.
+                        enabled:
+                            tool.onPressed != null &&
+                            (!tool.isDeviceRequired || connected),
+                        disabledHint: tool.onPressed == null
+                            ? '${localizations.wip} · ${tool.description}'
+                            : localizations.device_required,
+                        onTap: () => showDialog(
+                          context: context,
+                          builder: (_) => tool.onPressed!,
                         ),
-                        itemCount: tools.length,
-                        itemBuilder: (context, index) {
-                          final tool = tools[index];
-                          final disconnected =
-                              tool.isDeviceRequired &&
-                              !appState.connector!.connected;
-                          final available =
-                              tool.onPressed != null && !disconnected;
-                          return Card(
-                            margin: EdgeInsets.zero,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(18),
-                              onTap: available
-                                  ? () => showDialog(
-                                      context: context,
-                                      builder: (_) => tool.onPressed!,
-                                    )
-                                  : null,
-                              child: Padding(
-                                padding: const EdgeInsets.all(18),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          width: 42,
-                                          height: 42,
-                                          decoration: BoxDecoration(
-                                            color: colors.primary.withValues(
-                                              alpha: 0.12,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          child: Icon(
-                                            tool.icon,
-                                            color: colors.primary,
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        if (disconnected || !available)
-                                          Text(
-                                            disconnected
-                                                ? localizations.device_required
-                                                : localizations.wip,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .labelSmall
-                                                ?.copyWith(
-                                                  color:
-                                                      colors.onSurfaceVariant,
-                                                ),
-                                          )
-                                        else
-                                          Icon(
-                                            Icons.arrow_outward_rounded,
-                                            color: colors.onSurfaceVariant,
-                                          ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      tool.name,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium,
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      tool.description,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: colors.onSurfaceVariant,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }

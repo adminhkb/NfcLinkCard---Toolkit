@@ -59,7 +59,7 @@ class _MctWritePanelState extends State<MctWritePanel> {
   }
 
   ChameleonCommunicator? get _communicator {
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
     final connector = appState.connector;
     if (connector == null ||
         !connector.connected ||
@@ -71,7 +71,7 @@ class _MctWritePanelState extends State<MctWritePanel> {
 
   List<CardSave> get _mfcCards =>
       context
-          .read<ChameleonGUIState>()
+          .read<NlcAppState>()
           .sharedPreferencesProvider
           .getCards()
           .where((card) => isMifareClassic(card.tag))
@@ -90,7 +90,7 @@ class _MctWritePanelState extends State<MctWritePanel> {
   }
 
   List<Uint8List> _candidateKeys(AppLocalizations localizations) {
-    final provider = context.read<ChameleonGUIState>().sharedPreferencesProvider;
+    final provider = context.read<NlcAppState>().sharedPreferencesProvider;
     final dictionaries = provider.getDictionaries(keyLength: 12);
     final selected = dictionaries
         .where((dict) => _dictionaryIds.contains(dict.id))
@@ -105,7 +105,7 @@ class _MctWritePanelState extends State<MctWritePanel> {
       _show(localizations.basic_write_connect_ultra);
       return;
     }
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
     final chunkSize =
         appState.connector!.connectionType == ConnectionType.ble ? 32 : 64;
     setState(() {
@@ -249,7 +249,7 @@ class _MctWritePanelState extends State<MctWritePanel> {
           localizations.mct_failed_blocks(failed.join(', ')),
       ];
       _show(lines.join('\n'));
-      if (mounted) context.read<ChameleonGUIState>().changesMade();
+      if (mounted) context.read<NlcAppState>().changesMade();
     } catch (_) {
       _show(localizations.mct_write_error);
     } finally {
@@ -439,7 +439,7 @@ class _MctWritePanelState extends State<MctWritePanel> {
             ? localizations.mct_value_done
             : localizations.mct_value_result(value.toString()),
       );
-      if (mounted) context.read<ChameleonGUIState>().changesMade();
+      if (mounted) context.read<NlcAppState>().changesMade();
     } catch (_) {
       _show(localizations.mct_write_error);
     } finally {
@@ -579,7 +579,7 @@ class _MctWritePanelState extends State<MctWritePanel> {
   }
 
   Widget _buildKeyMapSection(AppLocalizations localizations) {
-    final provider = context.read<ChameleonGUIState>().sharedPreferencesProvider;
+    final provider = context.read<NlcAppState>().sharedPreferencesProvider;
     final dictionaries = provider.getDictionaries(keyLength: 12);
     final map = _keyMap;
     return Column(

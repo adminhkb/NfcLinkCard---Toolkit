@@ -93,7 +93,6 @@ def main() -> None:
     save_png(background, ASSETS / "background-bw.png")
 
     save_png(icon, ROOT / "debian/gui/nlc-toolkit.png", 512)
-    save_png(icon, ROOT / "aur/chameleonultragui.png", 512)
     save_png(
         icon,
         ROOT / "macos/Runner/AppIcon.icon/Assets/logo-color-desktop.png",

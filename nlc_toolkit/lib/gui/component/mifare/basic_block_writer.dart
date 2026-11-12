@@ -56,7 +56,7 @@ class _BasicMifareBlockWriterState extends State<BasicMifareBlockWriter> {
   Future<void> _writeBlock(CardSave card, int block) async {
     if (_busy) return;
     final localizations = AppLocalizations.of(context)!;
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
     final connector = appState.connector;
     final communicator = appState.communicator;
 
@@ -190,7 +190,7 @@ class _BasicMifareBlockWriterState extends State<BasicMifareBlockWriter> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final appState = context.watch<ChameleonGUIState>();
+    final appState = context.watch<NlcAppState>();
     final cards =
         appState.sharedPreferencesProvider
             .getCards()

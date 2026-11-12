@@ -1,3 +1,5 @@
+import 'package:nlc_toolkit/gui/design/nlc_widgets.dart';
+import 'package:nlc_toolkit/gui/design/nlc_theme.dart';
 import 'package:nlc_toolkit/gui/component/error_page.dart';
 import 'package:nlc_toolkit/gui/menu/dialogs/chameleon_settings.dart';
 import 'package:nlc_toolkit/helpers/definitions.dart';
@@ -31,7 +33,7 @@ class HomePageState extends State<HomePage> {
 
   Future<((Icon, BatteryCharge), String, List<String>, bool, bool)>
   getFutureData() async {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     List<SlotTypes> slotTypes = [];
     try {
       slotTypes = await appState.communicator!.getSlotTagTypes();
@@ -55,7 +57,7 @@ class HomePageState extends State<HomePage> {
     int ultraCapability = ChameleonCommand.mf0UlcAuth.value;
     int liteCapability = ChameleonCommand.setIdteckEmulatorID.value;
 
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     List<int> capabilities;
     try {
       capabilities = await appState.communicator!.getDeviceCapabilities();
@@ -77,7 +79,7 @@ class HomePageState extends State<HomePage> {
   }
 
   Future<(Icon, BatteryCharge)> getBatteryInfo() async {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     var icon = const Icon(Icons.battery_unknown);
     BatteryCharge battery = BatteryCharge(percent: 0, voltage: 0);
 
@@ -124,7 +126,7 @@ class HomePageState extends State<HomePage> {
   }
 
   Future<List<String>> getVersion() async {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
 
     String commitHash = "";
     var firmware = await appState.communicator!.getFirmwareVersion();
@@ -204,12 +206,12 @@ class HomePageState extends State<HomePage> {
   }
 
   Future<bool> isReaderDeviceMode() async {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     return await appState.communicator!.isReaderDeviceMode();
   }
 
   Future<void> _checkFirmwareUpdates(List<String> fwVersion) async {
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
     final localizations = AppLocalizations.of(context)!;
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     String latestCommit;
@@ -282,7 +284,7 @@ class HomePageState extends State<HomePage> {
   }
 
   Future<void> _updateFirmware() async {
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
     final localizations = AppLocalizations.of(context)!;
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     scaffoldMessenger.showSnackBar(
@@ -303,7 +305,7 @@ class HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
     final localizations = AppLocalizations.of(context)!;
 
     return FutureBuilder(
@@ -311,6 +313,7 @@ class HomePageState extends State<HomePage> {
       builder: (BuildContext context, AsyncSnapshot snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
+            backgroundColor: Colors.transparent,
             appBar: AppBar(title: Text(localizations.device_dashboard)),
             body: const Center(child: CircularProgressIndicator()),
           );
@@ -318,6 +321,7 @@ class HomePageState extends State<HomePage> {
         if (snapshot.hasError) {
           appState.disconnect();
           return Scaffold(
+            backgroundColor: Colors.transparent,
             appBar: AppBar(title: Text(localizations.device_dashboard)),
             body: Center(
               child: ErrorPage(errorMessage: snapshot.error.toString()),
@@ -467,10 +471,7 @@ class HomePageState extends State<HomePage> {
           return panel(
             Row(
               children: [
-                const Icon(
-                  Icons.check_circle_rounded,
-                  color: Color(0xFF4ED1A1),
-                ),
+                const Icon(Icons.check_circle_rounded, color: Nlc.emerald400),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -522,7 +523,7 @@ class HomePageState extends State<HomePage> {
                   LinearProgressIndicator(
                     value: (percent.clamp(0, 100) as num).toDouble() / 100,
                     color: percent > 20
-                        ? const Color(0xFF4ED1A1)
+                        ? Nlc.emerald400
                         : colors.error,
                     minHeight: 5,
                     borderRadius: BorderRadius.circular(10),
@@ -653,39 +654,35 @@ class HomePageState extends State<HomePage> {
         }
 
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('NLC Toolkit'),
-            actions: [
-              IconButton(
-                onPressed: () => appState.disconnect(manual: true),
-                tooltip: localizations.disconnect_device,
-                icon: const Icon(Icons.link_off_rounded),
-              ),
-            ],
-          ),
+          backgroundColor: Colors.transparent,
           body: LayoutBuilder(
             builder: (context, constraints) {
               final compact = constraints.maxWidth < 840;
               return SingleChildScrollView(
-                padding: EdgeInsets.all(compact ? 16 : 28),
+                padding: EdgeInsets.fromLTRB(
+                  compact ? 16 : 32,
+                  compact ? 20 : 32,
+                  compact ? 16 : 32,
+                  40,
+                ),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1120),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          localizations.device_dashboard,
-                          style: textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          localizations.device_dashboard_description,
-                          style: textTheme.bodyLarge?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
+                        NlcPageHeader(
+                          eyebrow: localizations.nlc_nav_device,
+                          eyebrowIcon: Icons.memory_rounded,
+                          title: localizations.device_dashboard,
+                          subtitle: Text(localizations.device_dashboard_description),
+                          actions: [
+                            OutlinedButton.icon(
+                              onPressed: () => appState.disconnect(manual: true),
+                              icon: const Icon(Icons.link_off_rounded, size: 18),
+                              label: Text(localizations.disconnect_device),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 24),
                         if (isDemo) warningPanel(localizations.demo_firmware),

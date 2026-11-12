@@ -1,3 +1,4 @@
+import 'package:nlc_toolkit/helpers/interchange_formats.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:nlc_toolkit/gui/component/qrcode_scanner.dart';
@@ -42,8 +43,7 @@ class QrCodeImportState extends State<QrCodeImport> {
                 builder: (BuildContext context) {
                   return const QrCodeScanner();
                 });
-            if (qrCodeData
-                .contains("\"Info\":\"Chameleon Ultra GUI Settings\"")) {
+            if (InterchangeFormat.isSettingsQrHeader(qrCodeData)) {
               Map<String, dynamic>? data = jsonDecode(qrCodeData);
               if (data == null) {
                 return;

@@ -1,38 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:nlc_toolkit/main.dart';
 import 'package:nlc_toolkit/gui/design/nlc_theme.dart';
+import 'package:nlc_toolkit/main.dart';
 
-ButtonStyle customCardButtonStyle(ChameleonGUIState appState) {
-  final selectedTheme = appState.sharedPreferencesProvider.getTheme();
-  final isDark =
-      selectedTheme == ThemeMode.dark ||
-      (selectedTheme == ThemeMode.system &&
-          WidgetsBinding.instance.platformDispatcher.platformBrightness ==
-              Brightness.dark);
-  final surface = isDark
-      ? NlcPalette.darkSurfaceRaised
-      : NlcPalette.lightSurfaceRaised;
-  final border = isDark ? NlcPalette.darkBorder : NlcPalette.lightBorder;
-  final text = isDark ? NlcPalette.darkText : NlcPalette.lightText;
-  final muted = isDark ? NlcPalette.darkMuted : NlcPalette.lightMuted;
-  final accent = isDark ? NlcPalette.cyan : NlcPalette.blue;
-
+/// Bouton des fiches de carte : même allure que le bouton secondaire de l'ERP, texte aligné à gauche.
+ButtonStyle customCardButtonStyle(NlcAppState appState) {
   return ButtonStyle(
     backgroundColor: WidgetStateProperty.resolveWith(
       (states) => states.contains(WidgetState.disabled)
-          ? surface.withValues(alpha: 0.55)
-          : surface,
+          ? Nlc.slate900.withValues(alpha: 0.55)
+          : states.contains(WidgetState.hovered)
+          ? Nlc.slate800
+          : Nlc.slate900,
     ),
     foregroundColor: WidgetStateProperty.resolveWith(
-      (states) => states.contains(WidgetState.disabled) ? muted : text,
+      (states) =>
+          states.contains(WidgetState.disabled) ? Nlc.slate500 : Nlc.slate100,
     ),
-    overlayColor: WidgetStateProperty.all(accent.withValues(alpha: 0.10)),
-    side: WidgetStateProperty.all(BorderSide(color: border)),
+    overlayColor: WidgetStateProperty.all(
+      Nlc.indigo400.withValues(alpha: 0.10),
+    ),
+    side: WidgetStateProperty.all(const BorderSide(color: Nlc.border)),
     padding: WidgetStateProperty.all(
       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     ),
     shape: WidgetStateProperty.all(
-      RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(Nlc.radius)),
     ),
   );
 }

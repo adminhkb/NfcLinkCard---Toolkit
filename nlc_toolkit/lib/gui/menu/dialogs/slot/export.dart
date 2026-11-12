@@ -34,7 +34,7 @@ class SlotExportMenuState extends State<SlotExportMenu> {
   TagFrequency exportFrequency = TagFrequency.unknown;
 
   Future<CardSave?> rebuildCardSaveFromSlot(TagFrequency frequency) async {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
 
     if (frequency == TagFrequency.lf) {
       if (isEM410X(widget.slotTypes.lf)) {
@@ -89,7 +89,7 @@ class SlotExportMenuState extends State<SlotExportMenu> {
 
   Future<void> onTap(
       CardSave card, dynamic close, AppLocalizations localizations) async {
-    var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+    var appState = Provider.of<NlcAppState>(context, listen: false);
     close(context, card.name);
 
     CardSave modify = card;
@@ -125,7 +125,7 @@ class SlotExportMenuState extends State<SlotExportMenu> {
   @override
   Widget build(BuildContext context) {
     var localizations = AppLocalizations.of(context)!;
-    var appState = context.watch<ChameleonGUIState>();
+    var appState = context.watch<NlcAppState>();
 
     List<String> buttons = [];
     if (widget.slotTypes.hf != TagType.unknown) {
@@ -226,7 +226,7 @@ class SlotExportMenuState extends State<SlotExportMenu> {
         ),
         ElevatedButton(
           onPressed: () async {
-            var appState = context.read<ChameleonGUIState>();
+            var appState = context.read<NlcAppState>();
             var tags = appState.sharedPreferencesProvider.getCards();
 
             tags.sort((a, b) => a.name.compareTo(b.name));

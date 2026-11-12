@@ -429,18 +429,6 @@ Future<void> saveTag(CardSave tag, BuildContext context, bool bin) async {
   }
 }
 
-void updateNavigationRailWidth(BuildContext context) async {
-  if (context.mounted) {
-    var appState = Provider.of<ChameleonGUIState>(context, listen: false);
-    await asyncSleep(500);
-    final railSize = appState.navigationRailKey.currentContext?.size;
-    if (context.mounted && railSize != null) {
-      appState.navigationRailSize = railSize;
-      appState.changesMade();
-    }
-  }
-}
-
 List<TagType> getTagTypesByFrequency(TagFrequency frequency) {
   if (frequency == TagFrequency.hf) {
     return [
@@ -613,7 +601,7 @@ bool isEM410X(TagType type) {
 
 Future<(HFCardInfo, MifareClassicInfo, MifareUltralightInfo)> readHFInfo(
     BuildContext context, dynamic updateMifareClassicRecovery) async {
-  var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+  var appState = Provider.of<NlcAppState>(context, listen: false);
   var localizations = AppLocalizations.of(context)!;
 
   HFCardInfo hfInfo = HFCardInfo();

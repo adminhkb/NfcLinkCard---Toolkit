@@ -66,7 +66,7 @@ class _HfSniffingMenuState extends State<HfSniffingMenu> {
   }
 
   Future<void> _loadCapabilities() async {
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
     if (appState.communicator == null) {
       return;
     }
@@ -96,7 +96,7 @@ class _HfSniffingMenuState extends State<HfSniffingMenu> {
     }
 
     final timeoutMs = int.parse(_timeoutController.text);
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
 
     setState(() {
       _isCapturing = true;
@@ -613,7 +613,7 @@ class _HfSniffingMenuState extends State<HfSniffingMenu> {
   }
 
   bool _isDeviceConnected() {
-    return context.read<ChameleonGUIState>().communicator != null;
+    return context.read<NlcAppState>().communicator != null;
   }
 
   Widget _buildStatusBlock() {

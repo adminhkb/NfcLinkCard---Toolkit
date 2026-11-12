@@ -48,7 +48,7 @@ class CardViewMenuState extends State<CardViewMenu> {
   }
 
   void _refreshCardData() {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     var cards = appState.sharedPreferencesProvider.getCards();
     var updatedCard = cards.firstWhere(
       (card) => card.id == widget.tagSave.id,
@@ -70,7 +70,7 @@ class CardViewMenuState extends State<CardViewMenu> {
   @override
   Widget build(BuildContext context) {
     var localizations = AppLocalizations.of(context)!;
-    var appState = context.watch<ChameleonGUIState>();
+    var appState = context.watch<NlcAppState>();
 
     return AlertDialog(
       title: Text(currentSavedCard.name,

@@ -20,7 +20,7 @@ class SlotChangerState extends State<SlotChanger> {
   }
 
   Future<List<Icon>> getFutureData() async {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     List<SlotTypes> usedSlots;
 
     try {
@@ -33,7 +33,7 @@ class SlotChangerState extends State<SlotChanger> {
   }
 
   Future<List<Icon>> getSlotIcons(List<SlotTypes> usedSlots) async {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     List<Icon> icons = [];
 
     try {
@@ -74,7 +74,7 @@ class SlotChangerState extends State<SlotChanger> {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
 
     return FutureBuilder(
         future: getFutureData(),

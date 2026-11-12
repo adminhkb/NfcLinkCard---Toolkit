@@ -39,7 +39,7 @@ class SlotSettingsState extends State<SlotSettings> {
   }
 
   Future<void> fetchInfo() async {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     var localizations = AppLocalizations.of(context)!;
 
     await appState.communicator!.activateSlot(widget.slot);
@@ -87,7 +87,7 @@ class SlotSettingsState extends State<SlotSettings> {
   }
 
   Future<void> openHfDumpEditor() async {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     var localizations = AppLocalizations.of(context)!;
     var navigator = Navigator.of(context);
     var scaffoldMessenger = ScaffoldMessenger.of(context);
@@ -183,7 +183,7 @@ class SlotSettingsState extends State<SlotSettings> {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<ChameleonGUIState>();
+    var appState = context.watch<NlcAppState>();
     var localizations = AppLocalizations.of(context)!;
 
     return FutureBuilder(

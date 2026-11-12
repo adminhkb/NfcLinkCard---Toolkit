@@ -1,27 +1,22 @@
-import 'package:nlc_toolkit/gui/component/developer_list.dart';
-import 'package:nlc_toolkit/gui/component/error_page.dart';
-import 'package:nlc_toolkit/gui/component/toggle_buttons.dart';
-import 'package:nlc_toolkit/gui/menu/dialogs/qr/settings.dart';
-import 'package:nlc_toolkit/helpers/general.dart';
-import 'package:nlc_toolkit/helpers/github.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:provider/provider.dart';
-import 'package:nlc_toolkit/helpers/open_collective.dart';
-import 'package:nlc_toolkit/main.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:file_picker/file_picker.dart';
 import 'dart:convert';
 import 'dart:io';
-import 'package:nlc_toolkit/gui/component/qrcode_viewer.dart';
-import 'package:crypto/crypto.dart';
-import 'package:nlc_toolkit/gui/menu/dialogs/qr/import.dart';
-import 'package:nlc_toolkit/gui/menu/pages/changelog_view.dart';
-import 'package:flutter/services.dart' show rootBundle;
 
-// Localizations
+import 'package:crypto/crypto.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:nlc_toolkit/erp/auth_controller.dart';
 import 'package:nlc_toolkit/generated/i18n/app_localizations.dart';
+import 'package:nlc_toolkit/gui/component/qrcode_viewer.dart';
+import 'package:nlc_toolkit/gui/design/nlc_theme.dart';
+import 'package:nlc_toolkit/gui/design/nlc_widgets.dart';
+import 'package:nlc_toolkit/gui/menu/dialogs/qr/import.dart';
+import 'package:nlc_toolkit/gui/menu/dialogs/qr/settings.dart';
+import 'package:nlc_toolkit/helpers/interchange_formats.dart';
+import 'package:nlc_toolkit/main.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 
 Future<String> loadLicense(String license) async {
   return await rootBundle.loadString('assets/licenses/$license.md');
@@ -35,629 +30,484 @@ class SettingsMainPage extends StatefulWidget {
 }
 
 class SettingsMainPageState extends State<SettingsMainPage> {
-  @override
-  void initState() {
-    super.initState();
+  late final Future<PackageInfo> _packageInfo = PackageInfo.fromPlatform();
+
+  /* ─────────────── Export et import des réglages ─────────────── */
+
+  Future<void> _exportAsQrCodes() async {
+    final appState = context.read<NlcAppState>();
+    final settingsJson = appState.sharedPreferencesProvider
+        .dumpSettingsToJson();
+    final Map<String, int> options =
+        await showDialog(
+          context: context,
+          builder: (_) => const QRCodeSettings(),
+        ) ??
+        {};
+    if (options.isEmpty || !mounted) return;
+
+    final chunks = splitStringIntoQrChunks(settingsJson, options['splitSize']!);
+    chunks.insert(
+      0,
+      jsonEncode({
+        'Info': InterchangeFormat.settingsQrHeader,
+        'chunks': chunks.length,
+        'sha256': sha256
+            .convert(const Utf8Encoder().convert(settingsJson))
+            .toString(),
+      }),
+    );
+    await showDialog(
+      context: context,
+      builder: (_) => QrCodeViewer(
+        qrChunks: chunks,
+        errorCorrection: options['errorCorrection']!,
+      ),
+    );
+    appState.changesMade();
   }
 
-  Future<(String, List<Map<String, String>>, PackageInfo)>
-      getFutureData() async {
-    return (
-      await fetchOCnames(),
-      await fetchContributors(),
-      await PackageInfo.fromPlatform()
+  Future<void> _exportAsFile() async {
+    final appState = context.read<NlcAppState>();
+    final l = AppLocalizations.of(context)!;
+    await FilePicker.saveFile(
+      dialogTitle: '${l.output_file}:',
+      fileName: 'NLCToolkitSettings.json',
+      bytes: const Utf8Encoder().convert(
+        appState.sharedPreferencesProvider.dumpSettingsToJson(),
+      ),
     );
   }
 
-  Future<String> fetchOCnames() async {
-    final List<String> names = await fetchOpenCollectiveContributors();
-
-    if (names.isEmpty && mounted) {
-      return AppLocalizations.of(context)!.failed_to_fetch_oc_contributors;
+  Future<void> _importFromQrCodes() async {
+    final appState = context.read<NlcAppState>();
+    final l = AppLocalizations.of(context)!;
+    if (!(Platform.isAndroid || Platform.isIOS)) {
+      await showDialog(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l.error),
+          content: Text(l.qr_code_import_not_supported_description),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(l.ok),
+            ),
+          ],
+        ),
+      );
+      return;
     }
-
-    String finalNames = "";
-    for (String name in names) {
-      finalNames += "$name, ";
-    }
-    return finalNames.substring(0, finalNames.length - 2);
+    final String? settingsJson = await showDialog(
+      context: context,
+      builder: (_) => const QrCodeImport(),
+    );
+    if (settingsJson == null) return;
+    appState.sharedPreferencesProvider.restoreSettingsFromJson(settingsJson);
+    appState.changesMade();
   }
 
-  Future<List<Map<String, String>>> fetchContributors() async {
-    return await fetchGitHubContributors();
+  Future<void> _importFromFile() async {
+    final appState = context.read<NlcAppState>();
+    final PlatformFile? picked = await FilePicker.pickFile();
+    if (picked == null) return;
+    final contents = await File(picked.path!).readAsBytes();
+    appState.sharedPreferencesProvider.restoreSettingsFromJson(
+      const Utf8Decoder().convert(contents),
+    );
+    appState.changesMade();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    var appState = context.watch<ChameleonGUIState>();
-    var localizations = AppLocalizations.of(context)!;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(localizations.settings),
+  /// Propose le QR code ou le fichier, puis lance [onQrCode] ou [onFile].
+  void _chooseTransfer({
+    required String title,
+    required String text,
+    required Future<void> Function() onQrCode,
+    required Future<void> Function() onFile,
+  }) {
+    final l = AppLocalizations.of(context)!;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: Text(text),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l.cancel),
+          ),
+          OutlinedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              onQrCode();
+            },
+            child: Text(l.qr_code),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              onFile();
+            },
+            child: Text(l.json_file),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _SettingsSection(
-                    title: localizations.settings_section_appearance,
-                    icon: Icons.palette_outlined,
-                    children: [
-              Text(localizations.sidebar_expansion,
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 5),
-              ToggleButtonsWrapper(
-                  key: ValueKey(
-                      'sidebar-${Localizations.localeOf(context).toLanguageTag()}'),
-                  items: [
-                    localizations.expand,
-                    localizations.auto,
-                    localizations.retract
-                  ],
-                  selectedValue: appState.sharedPreferencesProvider
-                      .getSideBarExpandedIndex(),
-                  onChange: (int index) async {
-                    if (index == 0) {
-                      appState.sharedPreferencesProvider
-                          .setSideBarExpanded(true);
-                      appState.sharedPreferencesProvider
-                          .setSideBarAutoExpansion(false);
-                    } else if (index == 2) {
-                      appState.sharedPreferencesProvider
-                          .setSideBarExpanded(false);
-                      appState.sharedPreferencesProvider
-                          .setSideBarAutoExpansion(false);
-                    } else {
-                      appState.sharedPreferencesProvider
-                          .setSideBarAutoExpansion(true);
-                    }
-                    appState.sharedPreferencesProvider
-                        .setSideBarExpandedIndex(index);
-                    appState.changesMade();
+    );
+  }
 
-                    WidgetsBinding.instance.addPostFrameCallback(
-                        (_) => updateNavigationRailWidth(context));
-                  }),
-              const SizedBox(height: 10),
-              Text(
-                localizations.theme,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 5),
-              ToggleButtonsWrapper(
-                  key: ValueKey(
-                      'theme-${Localizations.localeOf(context).toLanguageTag()}'),
-                  items: [
-                    localizations.system,
-                    localizations.light,
-                    localizations.dark
-                  ],
-                  selectedValue:
-                      appState.sharedPreferencesProvider.getTheme().index,
-                  onChange: (int index) async {
-                    appState.sharedPreferencesProvider
-                        .setTheme(ThemeMode.values[index]);
-                    appState.changesMade();
-                  }),
-              const SizedBox(height: 10),
-              Text(
-                localizations.language,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 5),
-              FittedBox(
-                alignment: Alignment.centerLeft,
-                fit: BoxFit.scaleDown,
-                child: DropdownButton(
-                  value: appState.sharedPreferencesProvider
-                      .getLocale()
-                      .toLanguageTag(),
-                  onChanged: (value) {
-                    final parts = (value ?? 'en').split('-');
-                    appState.sharedPreferencesProvider
-                        .setLocale(Locale(parts.first,
-                            parts.length > 1 ? parts.last : null));
-                    appState.changesMade();
-                  },
-                  items: AppLocalizations.supportedLocales.map((locale) {
-                    final localeLocalizations = lookupAppLocalizations(locale);
-                    return DropdownMenuItem(
-                        value: locale.toLanguageTag(),
-                        child: Text(localeLocalizations.language_name));
-                  }).toList(),
-                ),
-              ),
-                    ],
-                  ),
-                  _SettingsSection(
-                    title: localizations.settings_section_connection,
-                    icon: Icons.bluetooth_connected_outlined,
-                    children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 680),
-                child: SwitchListTile(
-                  title: Text(
-                    localizations.auto_scan_devices,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  value: appState.sharedPreferencesProvider.getAutoScanEnabled(),
-                  onChanged: (value) async {
-                    appState.sharedPreferencesProvider.setAutoScanEnabled(value);
-                    appState.changesMade();
-                  },
-                ),
-              ),
-              const SizedBox(height: 10),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 680),
-                child: SwitchListTile(
-                  title: Text(
-                    localizations.auto_connect_first_device,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  value: appState.sharedPreferencesProvider
-                      .getAutoConnectFirstFoundDevice(),
-                  onChanged: (value) async {
-                    appState.sharedPreferencesProvider
-                        .setAutoConnectFirstFoundDevice(value);
-                    appState.changesMade();
-                  },
-                ),
-              ),
-                    ],
-                  ),
-                  _SettingsSection(
-                    title: localizations.settings_section_data,
-                    icon: Icons.folder_outlined,
-                    children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 680),
-                child: SwitchListTile(
-                  title: Text(
-                    localizations.confirm_deletions,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  value: appState.sharedPreferencesProvider.getConfirmDelete(),
-                  onChanged: (value) async {
-                    appState.sharedPreferencesProvider.setConfirmDelete(value);
-                    appState.changesMade();
-                  },
-                ),
-              ),
-              const SizedBox(height: 10),
-              FittedBox(
-                alignment: Alignment.centerLeft,
-                fit: BoxFit.scaleDown,
-                child: TextButton(
-                    onPressed: () => showDialog<String>(
-                          context: context,
-                          builder: (BuildContext context) => AlertDialog(
-                            title: Text(AppLocalizations.of(context)!
-                                .choose_export_method),
-                            content: Text(AppLocalizations.of(context)!
-                                .choose_export_method_description),
-                            actions: <Widget>[
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: Text(localizations.cancel),
-                              ),
-                              TextButton(
-                                onPressed: () async {
-                                  String string = appState
-                                      .sharedPreferencesProvider
-                                      .dumpSettingsToJson();
+  /* ─────────────── À propos ─────────────── */
 
-                                  Map<String, int> settings = await showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            return const QRCodeSettings();
-                                          }) ??
-                                      {};
+  Future<void> _showLicenses() async {
+    final licenses = {
+      'BSD-3-Clause': await loadLicense('BSD-3-Clause'),
+      'GPL3': await loadLicense('GPL3'),
+      'LGPL3': await loadLicense('LGPL3'),
+      'MIT': await loadLicense('MIT'),
+    };
+    void register(String package, String license) => LicenseRegistry.addLicense(
+      () => Stream<LicenseEntry>.value(
+        LicenseEntryWithLineBreaks(<String>[package], licenses[license]!),
+      ),
+    );
+    register('chinese_font_library', 'BSD-3-Clause'); // helpers/font.dart
+    register('FlipperNestedRecovery', 'LGPL3'); // hardnested porté pour Windows
+    register('proxmark3', 'GPL3');
+    register('minlzma', 'MIT'); // décompression des tables hardnested
+    if (mounted) {
+      showLicensePage(context: context, applicationName: 'NLC Toolkit');
+    }
+  }
 
-                                  if (settings.isEmpty) {
-                                    return;
-                                  }
-
-                                  List<String> qrChunks =
-                                      splitStringIntoQrChunks(string,
-                                          settings["splitSize"]!); //2048
-
-                                  // Generate Header Info
-                                  Map<String, dynamic> headerData = {
-                                    "Info": "Chameleon Ultra GUI Settings",
-                                    "chunks": qrChunks.length,
-                                    "sha256": sha256
-                                        .convert(
-                                            const Utf8Encoder().convert(string))
-                                        .toString(),
-                                  };
-                                  qrChunks.insert(0, jsonEncode(headerData));
-
-                                  if (context.mounted) {
-                                    await showDialog(
-                                      context: context,
-                                      builder: (BuildContext context) =>
-                                          QrCodeViewer(
-                                              qrChunks: qrChunks,
-                                              errorCorrection:
-                                                  settings["errorCorrection"]!),
-                                    );
-                                  }
-
-                                  appState.changesMade();
-                                  if (context.mounted) {
-                                    Navigator.pop(context);
-                                  }
-                                },
-                                child: Text(localizations.qr_code),
-                              ),
-                              TextButton(
-                                onPressed: () async {
-                                  await FilePicker.saveFile(
-                                    dialogTitle:
-                                        '${localizations.output_file}:',
-                                    fileName: 'NLCToolkitSettings.json',
-                                    bytes: const Utf8Encoder().convert(appState
-                                        .sharedPreferencesProvider
-                                        .dumpSettingsToJson()),
-                                  );
-                                },
-                                child: Text(
-                                    AppLocalizations.of(context)!.json_file),
-                              ),
-                            ],
-                          ),
-                        ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(AppLocalizations.of(context)!.export_settings),
-                        const Icon(Icons.upload)
-                      ],
-                    )),
-              ),
-              const SizedBox(height: 10),
-              FittedBox(
-                alignment: Alignment.centerLeft,
-                fit: BoxFit.scaleDown,
-                child: TextButton(
-                  onPressed: () => showDialog<String>(
-                    context: context,
-                    builder: (BuildContext context) => AlertDialog(
-                      title:
-                          Text(AppLocalizations.of(context)!.import_settings),
-                      content: Text(AppLocalizations.of(context)!
-                          .import_settings_description),
-                      actions: <Widget>[
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(localizations.cancel),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            if (!(Platform.isAndroid || Platform.isIOS)) {
-                              await showDialog(
-                                context: context,
-                                builder: (BuildContext context) => AlertDialog(
-                                  title:
-                                      Text(AppLocalizations.of(context)!.error),
-                                  content: Text(AppLocalizations.of(context)!
-                                      .qr_code_import_not_supported_description),
-                                  actions: <Widget>[
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: Text(localizations.ok),
-                                    ),
-                                  ],
-                                ),
-                              );
-                              return;
-                            }
-
-                            String? jsonData = await showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return const QrCodeImport();
-                                });
-
-                            if (jsonData == null) {
-                              return;
-                            }
-                            appState.sharedPreferencesProvider
-                                .restoreSettingsFromJson(jsonData);
-
-                            appState.changesMade();
-                            if (context.mounted) {
-                              Navigator.pop(context);
-                            }
-                          },
-                          child: Text(localizations.qr_code),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            PlatformFile? result = await FilePicker.pickFile();
-                            if (result != null) {
-                              File file = File(result.path!);
-                              var contents = await file.readAsBytes();
-                              var string =
-                                  const Utf8Decoder().convert(contents);
-                              appState.sharedPreferencesProvider
-                                  .restoreSettingsFromJson(string);
-                              appState.changesMade();
-                              if (context.mounted) {
-                                Navigator.pop(context);
-                              }
-                            }
-                          },
-                          child: Text(AppLocalizations.of(context)!.json_file),
-                        ),
-                      ],
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(AppLocalizations.of(context)!.import_settings),
-                      const Icon(Icons.download),
-                    ],
-                  ),
-                ),
-              ),
-                    ],
-                  ),
-                  _SettingsSection(
-                    title: localizations.about,
-                    icon: Icons.info_outline_rounded,
-                    children: [
-              TextButton(
-                style: TextButton.styleFrom(alignment: Alignment.centerLeft),
-                onPressed: () => showDialog<String>(
-                  context: context,
-                  builder: (BuildContext context) => AlertDialog(
-                    title: Text(localizations.about),
-                    content: Center(
-                      child: FutureBuilder(
-                        future: getFutureData(),
-                        builder:
-                            (BuildContext context, AsyncSnapshot snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                                child: CircularProgressIndicator());
-                          } else if (snapshot.hasError) {
-                            appState.connector!.performDisconnect();
-                            return ErrorPage(
-                                errorMessage: snapshot.error.toString());
-                          } else {
-                            final (names, contributors, packageInfo) =
-                                snapshot.data;
-                            return SingleChildScrollView(
-                                child: Column(
-                              children: [
-                                const Text('NLC Toolkit',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
-                                Text(localizations.about_text),
-                                const SizedBox(height: 10),
-                                Text('${localizations.version}:'),
-                                Text(
-                                    '${packageInfo.version} (Build ${packageInfo.buildNumber})',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 10),
-                                Text('${localizations.developed_by}:'),
-                                const SizedBox(height: 10),
-                                DeveloperList(avatars: developers),
-                                const SizedBox(height: 10),
-                                Text('${localizations.license}:'),
-                                 const Text('GNU General Public License v3.0',
-                                     style:
-                                         TextStyle(fontWeight: FontWeight.bold)),
-                                 const SizedBox(height: 10),
-                                 Text(localizations.based_on_chameleon_gui),
-                                 const SizedBox(height: 6),
-                                 GestureDetector(
-                                    onTap: () async {
-                                      await launchUrl(Uri.parse(
-                                          'https://github.com/GameTec-live/ChameleonUltraGUI'));
-                                    },
-                                    child: const Text(
-                                        'https://github.com/GameTec-live/ChameleonUltraGUI')),
-                                const SizedBox(height: 30),
-                                GestureDetector(
-                                    onTap: () async {
-                                      await launchUrl(Uri.parse(
-                                          'https://opencollective.com/chameleon-ultra-gui'));
-                                    },
-                                    child:
-                                        Text(localizations.thanks_for_support)),
-                                const SizedBox(height: 10),
-                                Text(names,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 10),
-                                Text('${localizations.code_contributors}:'),
-                                const SizedBox(height: 10),
-                                DeveloperList(avatars: contributors),
-                                const SizedBox(height: 10),
-                                Text(localizations.trademarks_mifare),
-                                const SizedBox(height: 10),
-                                Text(localizations.trademarks_em),
-                                const SizedBox(height: 10),
-                                Text(localizations.trademarks_hid),
-                              ],
-                            ));
-                          }
-                        },
-                      ),
-                    ),
-                    actions: <Widget>[
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(localizations.ok),
-                      ),
-                    ],
-                  ),
-                ),
-                child: Text(localizations.about),
-              ),
-              const SizedBox(height: 10),
-              TextButton(
-                style: TextButton.styleFrom(alignment: Alignment.centerLeft),
-                onPressed: () async {
-                  Map<String, String> licenses = {
-                    'BSD-3-Clause': await loadLicense('BSD-3-Clause'),
-                    'GPL3': await loadLicense('GPL3'),
-                    'LGPL3': await loadLicense('LGPL3'),
-                    'MIT': await loadLicense('MIT')
-                  };
-
-                  // font.dart
-                  LicenseRegistry.addLicense(() => Stream<LicenseEntry>.value(
-                        LicenseEntryWithLineBreaks(
-                          <String>['chinese_font_library'],
-                          licenses['BSD-3-Clause']!,
-                        ),
-                      ));
-
-                  // ported hardnested to Windows + MSVC, separation from proxmark3 code
-                  LicenseRegistry.addLicense(() => Stream<LicenseEntry>.value(
-                        LicenseEntryWithLineBreaks(
-                          <String>['FlipperNestedRecovery'],
-                          licenses['LGPL3']!,
-                        ),
-                      ));
-
-                  LicenseRegistry.addLicense(() => Stream<LicenseEntry>.value(
-                        LicenseEntryWithLineBreaks(
-                          <String>['proxmark3'],
-                          licenses['GPL3']!,
-                        ),
-                      ));
-
-                  // hardnested tables uncompressor
-                  LicenseRegistry.addLicense(() => Stream<LicenseEntry>.value(
-                        LicenseEntryWithLineBreaks(
-                          <String>['minlzma'],
-                          licenses['MIT']!,
-                        ),
-                      ));
-
-                  if (context.mounted) {
-                    showLicensePage(context: context);
-                  }
-                },
-                child: Text(localizations.licenses),
-              ),
-              const SizedBox(height: 10),
-              TextButton(
-                style: TextButton.styleFrom(alignment: Alignment.centerLeft),
-                onPressed: () => showDialog<String>(
-                  context: context,
-                  builder: (BuildContext context) => const ChangelogView(),
-                ),
-                child: Text(localizations.changelog),
-              ),
-              const SizedBox(height: 10),
-              TextButton(
-                style: TextButton.styleFrom(alignment: Alignment.centerLeft),
-                onPressed: () async {
-                  await launchUrl(Uri.parse(
-                      'https://crowdin.com/project/chameleonultragui'));
-                },
-                child: Text(localizations.help_translate),
-              ),
-                    ],
-                  ),
-                  _SettingsSection(
-                    title: localizations.settings_section_developer,
-                    icon: Icons.code_rounded,
-                    children: [
-              TextButton(
-                style: TextButton.styleFrom(alignment: Alignment.centerLeft),
-                onPressed: () => showDialog<String>(
-                  context: context,
-                  builder: (BuildContext context) => AlertDialog(
-                    title: Text(localizations.emulate_device),
-                    content: Text(localizations.emulate_device_confirmation(
-                        appState.sharedPreferencesProvider.isEmulatedChameleon()
-                            ? localizations.deactivate.toLowerCase()
-                            : localizations.activate.toLowerCase())),
-                    actions: <Widget>[
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(localizations.cancel),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          appState.sharedPreferencesProvider
-                              .setEmulatedChameleon(!appState
-                                  .sharedPreferencesProvider
-                                  .isEmulatedChameleon());
-                          appState.connector = null;
-                          appState.changesMade();
-                          Navigator.pop(context);
-                        },
-                        child: Text(localizations.ok),
-                      ),
-                    ],
-                  ),
-                ),
-                child: Text(
-                    "${appState.sharedPreferencesProvider.isEmulatedChameleon() ? localizations.deactivate : localizations.activate} ${localizations.emulate_device.toLowerCase()}"),
-              ),
-              const SizedBox(height: 10),
-              TextButton(
-                style: TextButton.styleFrom(alignment: Alignment.centerLeft),
-                onPressed: () => showDialog<String>(
-                  context: context,
-                  builder: (BuildContext context) => AlertDialog(
-                    title: Text(localizations.debug_mode),
-                    content: Text(localizations.debug_mode_confirmation(
-                        appState.sharedPreferencesProvider.isDebugMode()
-                            ? localizations.deactivate.toLowerCase()
-                            : localizations.activate.toLowerCase())),
-                    actions: <Widget>[
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(localizations.cancel),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          appState.sharedPreferencesProvider.setDebugMode(
-                              !appState.sharedPreferencesProvider
-                                  .isDebugMode());
-                          appState.changesMade();
-                          Navigator.pop(context);
-                        },
-                        child: Text(localizations.ok),
-                      ),
-                    ],
-                  ),
-                ),
-                child: Text(
-                    "${appState.sharedPreferencesProvider.isDebugMode() ? localizations.deactivate : localizations.activate} ${localizations.debug_mode.toLowerCase()}"),
-              ),
-                    ],
-                  ),
-                ],
+  Future<void> _showLegalNotices() async {
+    final l = AppLocalizations.of(context)!;
+    final notice = await rootBundle.loadString('NOTICE.md');
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l.nlc_legal_notices),
+        content: SizedBox(
+          width: 560,
+          child: SingleChildScrollView(
+            child: SelectableText(
+              notice,
+              style: const TextStyle(
+                color: Nlc.slate300,
+                fontSize: 12.5,
+                height: 1.5,
               ),
             ),
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l.ok),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmToggle({
+    required String title,
+    required String text,
+    required VoidCallback onConfirm,
+  }) {
+    final l = AppLocalizations.of(context)!;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: Text(text),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              onConfirm();
+              Navigator.pop(dialogContext);
+            },
+            child: Text(l.ok),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = context.watch<NlcAppState>();
+    final auth = context.watch<AuthController>();
+    final l = AppLocalizations.of(context)!;
+    final prefs = appState.sharedPreferencesProvider;
+    final emulated = prefs.isEmulatedChameleon();
+    final debugMode = prefs.isDebugMode();
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: NlcPageBody(
+        maxWidth: 820,
+        children: [
+          NlcPageHeader(
+            eyebrow: 'NLC Toolkit',
+            eyebrowIcon: Icons.settings_rounded,
+            title: l.settings,
+            subtitle: Text(l.settings_description),
+          ),
+          const SizedBox(height: 24),
+          _Section(
+            title: l.nlc_settings_account,
+            icon: Icons.shield_outlined,
+            children: [
+              _Row(
+                title:
+                    '${l.nlc_settings_signed_in_as} ${auth.user?.email ?? '—'}',
+                trailing: OutlinedButton.icon(
+                  onPressed: () => auth.signOut(),
+                  icon: const Icon(Icons.logout_rounded, size: 18),
+                  label: Text(l.nlc_sign_out),
+                ),
+              ),
+              const Divider(height: 24),
+              _Row(
+                title: l.nlc_2fa_title,
+                subtitle: auth.hasTrustedDevice
+                    ? l.nlc_settings_device_remembered
+                    : l.nlc_settings_device_not_remembered,
+                trailing: auth.hasTrustedDevice
+                    ? OutlinedButton(
+                        onPressed: () async {
+                          await auth.forgetThisDevice();
+                          if (context.mounted) {
+                            showNlcToast(
+                              context,
+                              l.nlc_settings_forget_device_done,
+                            );
+                          }
+                        },
+                        child: Text(l.nlc_settings_forget_device),
+                      )
+                    : null,
+              ),
+            ],
+          ),
+          _Section(
+            title: l.nlc_settings_display,
+            icon: Icons.palette_outlined,
+            children: [
+              _Row(
+                title: l.nlc_mode_label,
+                subtitle: l.nlc_mode_hint,
+                trailing: SizedBox(
+                  width: 220,
+                  child: NlcSegmented<bool>(
+                    value: appState.advancedMode,
+                    options: [
+                      (value: false, label: l.nlc_mode_simple, icon: null),
+                      (value: true, label: l.nlc_mode_advanced, icon: null),
+                    ],
+                    onChanged: (value) {
+                      prefs.setAdvancedMode(value);
+                      appState.changesMade();
+                    },
+                  ),
+                ),
+              ),
+              const Divider(height: 24),
+              _Row(
+                title: l.language,
+                trailing: DropdownButton<String>(
+                  value: prefs.getLocale().toLanguageTag(),
+                  underline: const SizedBox.shrink(),
+                  borderRadius: BorderRadius.circular(Nlc.radius),
+                  dropdownColor: Nlc.slate950,
+                  onChanged: (value) {
+                    final parts = (value ?? 'en').split('-');
+                    prefs.setLocale(
+                      Locale(parts.first, parts.length > 1 ? parts.last : null),
+                    );
+                    appState.changesMade();
+                  },
+                  items: [
+                    for (final locale in AppLocalizations.supportedLocales)
+                      DropdownMenuItem(
+                        value: locale.toLanguageTag(),
+                        child: Text(
+                          lookupAppLocalizations(locale).language_name,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          _Section(
+            title: l.settings_section_connection,
+            icon: Icons.usb_rounded,
+            children: [
+              _Switch(
+                title: l.auto_scan_devices,
+                value: prefs.getAutoScanEnabled(),
+                onChanged: (value) {
+                  prefs.setAutoScanEnabled(value);
+                  appState.changesMade();
+                },
+              ),
+              _Switch(
+                title: l.auto_connect_first_device,
+                value: prefs.getAutoConnectFirstFoundDevice(),
+                onChanged: (value) {
+                  prefs.setAutoConnectFirstFoundDevice(value);
+                  appState.changesMade();
+                },
+              ),
+            ],
+          ),
+          _Section(
+            title: l.settings_section_data,
+            icon: Icons.folder_outlined,
+            children: [
+              _Switch(
+                title: l.confirm_deletions,
+                value: prefs.getConfirmDelete(),
+                onChanged: (value) {
+                  prefs.setConfirmDelete(value);
+                  appState.changesMade();
+                },
+              ),
+              const Divider(height: 24),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () => _chooseTransfer(
+                      title: l.choose_export_method,
+                      text: l.choose_export_method_description,
+                      onQrCode: _exportAsQrCodes,
+                      onFile: _exportAsFile,
+                    ),
+                    icon: const Icon(Icons.upload_rounded, size: 18),
+                    label: Text(l.export_settings),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => _chooseTransfer(
+                      title: l.import_settings,
+                      text: l.import_settings_description,
+                      onQrCode: _importFromQrCodes,
+                      onFile: _importFromFile,
+                    ),
+                    icon: const Icon(Icons.download_rounded, size: 18),
+                    label: Text(l.import_settings),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          _Section(
+            title: l.about,
+            icon: Icons.info_outline_rounded,
+            children: [
+              FutureBuilder<PackageInfo>(
+                future: _packageInfo,
+                builder: (context, snapshot) {
+                  final info = snapshot.data;
+                  return _Row(
+                    title: 'NLC Toolkit',
+                    subtitle: info == null
+                        ? l.about_text
+                        : '${l.version} ${info.version} (${info.buildNumber})\n${l.about_text}',
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              Text(
+                l.nlc_about_license_text,
+                style: const TextStyle(
+                  color: Nlc.slate400,
+                  fontSize: 12,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                [
+                  l.trademarks_mifare,
+                  l.trademarks_em,
+                  l.trademarks_hid,
+                ].join('\n'),
+                style: const TextStyle(
+                  color: Nlc.slate500,
+                  fontSize: 11,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _showLegalNotices,
+                    icon: const Icon(Icons.gavel_rounded, size: 18),
+                    label: Text(l.nlc_legal_notices),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _showLicenses,
+                    icon: const Icon(Icons.description_outlined, size: 18),
+                    label: Text(l.licenses),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          _Section(
+            title: l.settings_section_developer,
+            icon: Icons.code_rounded,
+            children: [
+              _Switch(
+                title: l.emulate_device,
+                value: emulated,
+                onChanged: (_) => _confirmToggle(
+                  title: l.emulate_device,
+                  text: l.emulate_device_confirmation(
+                    (emulated ? l.deactivate : l.activate).toLowerCase(),
+                  ),
+                  onConfirm: () {
+                    prefs.setEmulatedChameleon(!emulated);
+                    // Le connecteur est recréé au prochain affichage.
+                    appState.connector = null;
+                    appState.changesMade();
+                  },
+                ),
+              ),
+              _Switch(
+                title: l.debug_mode,
+                value: debugMode,
+                onChanged: (_) => _confirmToggle(
+                  title: l.debug_mode,
+                  text: l.debug_mode_confirmation(
+                    (debugMode ? l.deactivate : l.activate).toLowerCase(),
+                  ),
+                  onConfirm: () {
+                    prefs.setDebugMode(!debugMode);
+                    appState.changesMade();
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-class _SettingsSection extends StatelessWidget {
-  const _SettingsSection({
+class _Section extends StatelessWidget {
+  const _Section({
     required this.title,
     required this.icon,
     required this.children,
@@ -669,42 +519,104 @@ class _SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: NlcCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: colors.primaryContainer,
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: Icon(icon, color: colors.primary, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          )),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Divider(color: colors.outlineVariant, height: 1),
-            const SizedBox(height: 14),
+            NlcSectionTitle(title, icon: icon),
+            const SizedBox(height: 2),
             ...children,
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Ligne de réglage : intitulé et précision à gauche, commande à droite (dessous si la place manque).
+class _Row extends StatelessWidget {
+  const _Row({required this.title, this.subtitle, this.trailing});
+
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: Nlc.slate100,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 3),
+          Text(
+            subtitle!,
+            style: const TextStyle(
+              color: Nlc.slate400,
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ],
+    );
+    if (trailing == null) return text;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 520) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [text, const SizedBox(height: 10), trailing!],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: text),
+            const SizedBox(width: 16),
+            trailing!,
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _Switch extends StatelessWidget {
+  const _Switch({
+    required this.title,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+      title: Text(
+        title,
+        style: const TextStyle(
+          color: Nlc.slate100,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      value: value,
+      onChanged: onChanged,
     );
   }
 }

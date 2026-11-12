@@ -12,9 +12,10 @@ class FlashingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<ChameleonGUIState>();
+    var appState = context.watch<NlcAppState>();
     var localizations = AppLocalizations.of(context)!;
     return Scaffold(
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: const Text('Chameleon DFU'),
         ),

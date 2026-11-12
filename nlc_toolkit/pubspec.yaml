@@ -69,6 +69,8 @@ dependencies:
   wakelock_plus: ^1.8.0
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.4.0
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
 
 dev_dependencies:
   flutter_test:
@@ -131,6 +133,8 @@ flutter:
     - assets/dictionaries/mct/extended-std.keys
     - assets/dictionaries/mct/hotel-std.keys
     - assets/dictionaries/mct/NOTICE.md
+    - assets/fond-erp.png
+    - NOTICE.md
 
   fonts:
     - family: RobotoMono

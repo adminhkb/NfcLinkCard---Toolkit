@@ -34,7 +34,7 @@ class DictionaryDownloadMenuState extends State<DictionaryDownloadMenu> {
     super.dispose();
   }
 
-  Future<void> _downloadDictionary(ChameleonGUIState appState,
+  Future<void> _downloadDictionary(NlcAppState appState,
       DictionaryLocation dictLocation, AppLocalizations localizations) async {
     setState(() {
       _downloading.add(dictLocation.url);
@@ -76,7 +76,7 @@ class DictionaryDownloadMenuState extends State<DictionaryDownloadMenu> {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<ChameleonGUIState>();
+    var appState = context.watch<NlcAppState>();
     var localizations = AppLocalizations.of(context)!;
 
     List<DictionaryLocation> dictionaries = [

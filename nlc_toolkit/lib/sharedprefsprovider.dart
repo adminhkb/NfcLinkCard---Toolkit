@@ -1,3 +1,5 @@
+import 'package:nlc_toolkit/helpers/interchange_formats.dart';
+import 'package:nlc_toolkit/erp/secret_store.dart' show erpPreferencePrefix;
 import 'dart:typed_data';
 import 'dart:convert';
 
@@ -172,7 +174,7 @@ class DictionaryFolderBundle {
 
   factory DictionaryFolderBundle.fromJson(String source) {
     final data = jsonDecode(source) as Map<String, dynamic>;
-    if (data['format'] != 'chameleon-ultra-gui-dictionary-folder' ||
+    if (!InterchangeFormat.isDictionaryFolder(data['format']) ||
         data['version'] != 1) {
       throw const FormatException('Unsupported dictionary folder file');
     }
@@ -188,7 +190,7 @@ class DictionaryFolderBundle {
   }
 
   String toJson() => jsonEncode({
-    'format': 'chameleon-ultra-gui-dictionary-folder',
+    'format': InterchangeFormat.dictionaryFolder,
     'version': 1,
     'rootFolderId': rootFolderId,
     'folders': folders.map((folder) => jsonDecode(folder.toJson())).toList(),
@@ -312,7 +314,7 @@ class CardFolder {
   });
 }
 
-/// Versioned Chameleon Ultra GUI folder interchange format.
+/// Versioned card folder interchange format.
 class CardFolderBundle {
   final String rootFolderId;
   final List<CardFolder> folders;
@@ -326,7 +328,7 @@ class CardFolderBundle {
 
   factory CardFolderBundle.fromJson(String source) {
     final data = jsonDecode(source) as Map<String, dynamic>;
-    if (data['format'] != 'chameleon-ultra-gui-folder' ||
+    if (!InterchangeFormat.isCardFolder(data['format']) ||
         data['version'] != 1) {
       throw const FormatException('Unsupported folder file');
     }
@@ -342,7 +344,7 @@ class CardFolderBundle {
   }
 
   String toJson() => jsonEncode({
-    'format': 'chameleon-ultra-gui-folder',
+    'format': InterchangeFormat.cardFolder,
     'version': 1,
     'rootFolderId': rootFolderId,
     'folders': folders.map((folder) => jsonDecode(folder.toJson())).toList(),
@@ -723,7 +725,8 @@ class SharedPreferencesProvider extends ChangeNotifier {
     Map<String, dynamic> settingsMap = {};
 
     for (var key in _sharedPreferences.getKeys()) {
-      if (key == "debug_logging_value") {
+      // La session ERP et l'appareil mémorisé ne quittent jamais cet appareil.
+      if (key == "debug_logging_value" || key.startsWith(erpPreferencePrefix)) {
         continue;
       }
       var value = _sharedPreferences.get(key) as dynamic;
@@ -746,7 +749,8 @@ class SharedPreferencesProvider extends ChangeNotifier {
     for (var key in settingsMap.keys) {
       dynamic value = settingsMap[key];
 
-      if (value == null) {
+      // Un fichier de réglages ne peut pas injecter de session ERP.
+      if (value == null || key.startsWith(erpPreferencePrefix)) {
         continue;
       }
       switch (value) {
@@ -789,6 +793,16 @@ class SharedPreferencesProvider extends ChangeNotifier {
 
   void setAutoScanEnabled(bool value) {
     _sharedPreferences.setBool('auto_scan_enabled', value);
+  }
+
+  /// Mode d'affichage : simple (accueil, lecture, écriture) ou avancé (tous les outils).
+  bool getAdvancedMode() {
+    return _sharedPreferences.getBool('advanced_mode') ?? false;
+  }
+
+  void setAdvancedMode(bool value) {
+    _sharedPreferences.setBool('advanced_mode', value);
+    notifyListeners();
   }
 
   bool getAutoConnectFirstFoundDevice() {

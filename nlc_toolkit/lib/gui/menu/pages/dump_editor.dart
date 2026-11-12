@@ -1421,7 +1421,7 @@ class DumpEditorState extends State<DumpEditor> {
 
   Future<void> _startCompare() async {
     var localizations = AppLocalizations.of(context)!;
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     List<CardSave> candidates = appState.sharedPreferencesProvider
         .getCards()
         .where(
@@ -1486,7 +1486,7 @@ class DumpEditorState extends State<DumpEditor> {
 
   void _showDynamicBadgeAnalysis() {
     final savedCards = context
-        .read<ChameleonGUIState>()
+        .read<NlcAppState>()
         .sharedPreferencesProvider
         .getCards();
     showDialog<void>(

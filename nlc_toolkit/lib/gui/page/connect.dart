@@ -1,3 +1,4 @@
+import 'package:nlc_toolkit/gui/design/nlc_widgets.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 
@@ -38,8 +39,8 @@ class _ConnectPageState extends State<ConnectPage> {
   bool _showedPermissionsSnackbar = false;
   dynamic _lastAutoConnectAttemptPort;
 
-  ChameleonGUIState get _appState =>
-      Provider.of<ChameleonGUIState>(context, listen: false);
+  NlcAppState get _appState =>
+      Provider.of<NlcAppState>(context, listen: false);
 
   @override
   void initState() {
@@ -53,7 +54,7 @@ class _ConnectPageState extends State<ConnectPage> {
     super.dispose();
   }
 
-  bool _shouldScan(ChameleonGUIState appState) {
+  bool _shouldScan(NlcAppState appState) {
     return mounted &&
         !_connectionInProgress &&
         !appState.connector!.connected &&
@@ -613,19 +614,11 @@ class _ConnectPageState extends State<ConnectPage> {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<ChameleonGUIState>();
+    final appState = context.watch<NlcAppState>();
     final localizations = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: scheme.surface,
-      appBar: AppBar(
-        backgroundColor: scheme.surface,
-        surfaceTintColor: Colors.transparent,
-        titleSpacing: 24,
-        title: const Text('NLC Toolkit'),
-      ),
+      backgroundColor: Colors.transparent,
       body: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 700;
@@ -634,36 +627,20 @@ class _ConnectPageState extends State<ConnectPage> {
               constraints: const BoxConstraints(maxWidth: 920),
               child: Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: compact ? 20 : 36,
-                  vertical: compact ? 22 : 36,
+                  horizontal: compact ? 16 : 32,
+                  vertical: compact ? 20 : 32,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      localizations.home.toUpperCase(),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: scheme.primary,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.6,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      localizations.nlc_connect_title,
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontSize: compact ? 30 : 38,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1.1,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      Platform.isWindows
-                          ? localizations.nlc_connect_subtitle_windows
-                          : localizations.nlc_connect_subtitle,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: scheme.onSurfaceVariant,
+                    NlcPageHeader(
+                      eyebrow: localizations.nlc_nav_device,
+                      eyebrowIcon: Icons.usb_rounded,
+                      title: localizations.nlc_connect_title,
+                      subtitle: Text(
+                        Platform.isWindows
+                            ? localizations.nlc_connect_subtitle_windows
+                            : localizations.nlc_connect_subtitle,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -672,7 +649,7 @@ class _ConnectPageState extends State<ConnectPage> {
                       runSpacing: 10,
                       children: [
                         if (_devices.isNotEmpty || _error != null)
-                          FilledButton.tonalIcon(
+                          OutlinedButton.icon(
                             onPressed: _scanInProgress
                                 ? null
                                 : () => _scanNow(manual: true),

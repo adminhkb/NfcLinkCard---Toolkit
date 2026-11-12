@@ -50,7 +50,7 @@ class CardReaderState extends State<MifareClassicHelper> {
   }
 
   Future<void> saveCard({bool bin = false, bool skipDump = false}) async {
-    var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+    var appState = Provider.of<NlcAppState>(context, listen: false);
 
     var localizations = AppLocalizations.of(context)!;
     Uint8List cardDump = Uint8List(0);
@@ -99,7 +99,7 @@ class CardReaderState extends State<MifareClassicHelper> {
     double checkmarkSize = isSmallScreen ? 16 : 20;
     int checkmarkPerRow = (screenSize.width < 600) ? 8 : 16;
 
-    var appState = context.watch<ChameleonGUIState>();
+    var appState = context.watch<NlcAppState>();
     final dictionaries = appState.sharedPreferencesProvider.getDictionaries(
       keyLength: 12,
     )..insert(0, Dictionary(id: '', name: localizations.empty, keys: []));

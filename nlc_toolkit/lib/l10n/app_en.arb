@@ -19,8 +19,8 @@
   "nlc_connect_subtitle": "Find your ChameleonUltra V2 over USB or Bluetooth.",
   "nlc_connect_subtitle_windows": "Find your ChameleonUltra V2 connected by USB.",
   "nlc_available_devices": "Available devices",
-  "nlc_scan_in_progress": "Searching for devices…",
-  "nlc_connection_in_progress": "Connecting…",
+  "nlc_scan_in_progress": "Searching for devices\u2026",
+  "nlc_connection_in_progress": "Connecting\u2026",
   "nlc_connection_error": "Device search failed",
   "nlc_connection_error_description": "Check your USB or Bluetooth connection, then try again.",
   "nlc_connection_error_description_windows": "Check the USB cable and port, then try again.",
@@ -52,7 +52,7 @@
   "advanced_description": "Saved data, device slots, tools and settings",
   "device_dashboard": "Device dashboard",
   "device_dashboard_description": "Slots, firmware and device controls",
-  "device_io_checking": "Checking firmware and read/write support…",
+  "device_io_checking": "Checking firmware and read/write support\u2026",
   "device_io_ultra_required": "Connect a Chameleon Ultra V2 to read or write cards.",
   "device_io_legacy_protocol": "This firmware uses an outdated protocol. Open the device dashboard to update it before reading or writing.",
   "device_io_missing_commands": "This firmware does not support all commands needed for reading and writing. Update the firmware from the device dashboard.",
@@ -63,7 +63,6 @@
   "tools_description": "Open additional NFC and RFID tools",
   "settings_description": "Configure the app and connected device",
   "debug_description": "Developer diagnostics",
-  "based_on_chameleon_gui": "Based on Chameleon Ultra GUI",
   "settings": "Settings",
   "settings_section_appearance": "Appearance",
   "settings_section_connection": "Connection",
@@ -127,17 +126,12 @@
   "restart_required": "Restart required",
   "take_effects": "Changes will take effect after a restart",
   "language": "Language",
-  "sidebar_expansion": "Sidebar Expansion",
   "expand": "Expand",
-  "retract": "Retract",
   "auto": "Auto",
   "restart_now": "Restart now",
-  "about_text": "A Tool to graphically manage and configure your Chameleon Ultra, written in Flutter and running on Desktop and Mobile.",
+  "about_text": "Read, write and copy badges with a ChameleonUltra, linked to the ERP Badges workspace.",
   "version": "Version",
-  "developed_by": "Developed by",
   "license": "License",
-  "thanks_for_support": "Thanks to everyone who supports us on Open Collective!",
-  "code_contributors": "Code contributors",
   "not_implemented": "Not Implemented",
   "edit_data": "Edit Data",
   "enter_data": "Enter Data",
@@ -370,7 +364,6 @@
   "hardnested_collecting_nonces": "Collecting required nonces {nonces}/256...",
   "hardnested_calculating_key": "Calculating key...",
   "invalid_input": "One of the fields is filled in incorrectly",
-  "failed_to_fetch_oc_contributors": "Failed to fetch OpenCollective contributors",
   "recovery_old_firmware": "Failed to collect nonces, is your firmware up to date?",
   "emulate_device": "Emulated device",
   "emulate_device_confirmation": "Are you sure you want to {mode} emulated device? You can enable this to check app functions without having Chameleon Ultra, all actions with emulated device will not be saved. You won't be able to connect to real device unless you will disable this.",
@@ -437,16 +430,7 @@
   "continuous_scan": "Continuous scan",
   "trademarks_hid": "HID\u2122 and HID ProxCard\u2122 are registered trademarks of HID Global Corporation",
   "licenses": "Licenses",
-  "changelog": "Changelog",
-  "help_translate": "Help Translate",
-  "your_version": "Your Version",
-  "no_changelogs_available": "No changelogs available",
   "changes": "Changes",
-  "recent_commits": "Recent commits",
-  "latest_commits": "Latest commits",
-  "latest_commits_from_main_branch": "Latest commits from main branch",
-  "view_commits": "View Commits",
-  "view_full_release": "View Full Release",
   "no_changes_listed": "No changes listed",
   "unreleased": "Unreleased",
   "export_logs_to_file": "Export logs to file",
@@ -653,7 +637,7 @@
   "ulc_write_lock_and_counter": "Write lock bytes and counter (irreversible)",
   "dynamic_badge_action": "Analyze dynamic data",
   "dynamic_badge_title": "Dynamic badge analysis",
-  "dynamic_badge_subtitle": "MIFARE Classic · signatures and dump comparison",
+  "dynamic_badge_subtitle": "MIFARE Classic \u00b7 signatures and dump comparison",
   "dynamic_status_changed": "Data changes observed",
   "dynamic_status_changed_detail": "Readable data blocks differ between the two dumps. The cause of the change is unknown.",
   "dynamic_status_fingerprint": "Possible system signature",
@@ -707,12 +691,12 @@
   "dynamic_caveat_interpretation": "A brand marker, a value block, or changed data does not by itself prove a rolling code. This analysis cannot guarantee that a copy will work or predict synchronization behavior.",
   "dynamic_caveat_unsaved": "Unsaved edits in the dump editor are not included in this analysis.",
   "dynamic_read_only": "This analysis examines the displayed dump without writing to the card.",
-  "dynamic_static_combo_title": "HEXACT + INTRATONE profile detected · dynamic writing possible",
+  "dynamic_static_combo_title": "HEXACT + INTRATONE profile detected \u00b7 dynamic writing possible",
   "dynamic_static_combo_detail": "Both signatures appear in this dump. Some installations write to the badge; others do not. This dump alone cannot tell what this reader does, and rolling code remains undetermined.",
   "dynamic_static_write_label": "Writing on use",
   "dynamic_static_write_unverified": "Possible, not verified",
   "dynamic_sequence_title": "Detect from multiple readings",
-  "dynamic_sequence_optional_summary": "Optional · without after-use scans, rolling code is undetermined",
+  "dynamic_sequence_optional_summary": "Optional \u00b7 without after-use scans, rolling code is undetermined",
   "dynamic_sequence_help": "The open dump is the before capture. Select two distinct readings of the same badge, each after an actual use at the reader. An extra reading without using the badge can serve as a control. This comparison is optional; the static signature above remains visible without it.",
   "dynamic_sequence_before_label": "Before (open dump)",
   "dynamic_sequence_idle_label": "No-use control (optional)",
@@ -733,7 +717,7 @@
   "dynamic_sequence_data_changed_detail": "At least one transition shows changes, but no sufficiently reliable repeated pattern was established.",
   "dynamic_sequence_repeated_change": "Repeated change pattern",
   "dynamic_sequence_repeated_change_detail": "One or more blocks changed in both transitions without meeting the strict criteria for a dynamic mechanism. The cause remains unknown.",
-  "dynamic_sequence_compatible": "Compatible with a dynamic mechanism · rolling code possible",
+  "dynamic_sequence_compatible": "Compatible with a dynamic mechanism \u00b7 rolling code possible",
   "dynamic_sequence_compatible_detail": "The same readable byte position changed across both transitions after confirmed uses. This suggests evolving data but does not prove the protocol or a rolling code.",
   "dynamic_sequence_compared_blocks": "data blocks compared",
   "dynamic_sequence_first_blocks": "Blocks changed after first use:",
@@ -751,9 +735,12 @@
   "mct_import_hint": "Select one or more dumps saved by MIFARE Classic Tool. Each file becomes a card at the root of the library.",
   "mct_import_choose": "Choose files",
   "mct_import_imported": "Imported: {count}",
-  "mct_import_card": "UID {uid} · {sectors} sectors",
+  "mct_import_card": "UID {uid} \u00b7 {sectors} sectors",
   "@mct_import_card": {
-    "placeholders": { "uid": {}, "sectors": {} }
+    "placeholders": {
+      "uid": {},
+      "sectors": {}
+    }
   },
   "mct_import_unread": "{count} unread blocks",
   "mct_import_partial": "{count} blocks with unknown bytes, stored as 00",
@@ -794,9 +781,13 @@
   "mct_key_map_description": "Place the target card on the Chameleon, choose the dictionaries, then look for the keys of every sector.",
   "mct_dictionaries": "Dictionaries",
   "mct_map_keys": "Create key map",
-  "mct_key_map_summary": "UID {uid} · {found}/{total} sectors with a key",
+  "mct_key_map_summary": "UID {uid} \u00b7 {found}/{total} sectors with a key",
   "@mct_key_map_summary": {
-    "placeholders": { "uid": {}, "found": {}, "total": {} }
+    "placeholders": {
+      "uid": {},
+      "found": {},
+      "total": {}
+    }
   },
   "mct_keys_missing": "No key for sectors: {sectors}",
   "mct_key_map_required": "Create the key map of the target card first.",
@@ -807,11 +798,282 @@
   "mct_confirm_format": "Every sector of the card {uid} with a known key will return to its factory state. Its data will be lost.",
   "mct_nothing_to_write": "Nothing to write with these options.",
   "mct_skipped_trailers": "Trailers skipped because of invalid access conditions: sectors {sectors}",
-  "mct_report": "Verified: {verified} · Written, not read back: {written} · Failed: {failed} · No key: {noKey}",
+  "mct_report": "Verified: {verified} \u00b7 Written, not read back: {written} \u00b7 Failed: {failed} \u00b7 No key: {noKey}",
   "@mct_report": {
-    "placeholders": { "verified": {}, "written": {}, "failed": {}, "noKey": {} }
+    "placeholders": {
+      "verified": {},
+      "written": {},
+      "failed": {},
+      "noKey": {}
+    }
   },
   "mct_failed_blocks": "Failed blocks: {blocks}",
   "mct_card_changed": "The card changed or was removed. Writing stopped.",
-  "mct_write_error": "Communication error during writing."
+  "mct_write_error": "Communication error during writing.",
+  "nlc_login_subtitle": "Sign in with your ERP account",
+  "nlc_login_email": "Email address",
+  "nlc_login_email_hint": "e.g. colleague@your-domain.com",
+  "nlc_login_password": "Password",
+  "nlc_login_submit": "Sign in",
+  "nlc_login_footer": "Team access only. Unauthorized access attempts are logged.",
+  "nlc_login_show_password": "Show password",
+  "nlc_login_hide_password": "Hide password",
+  "nlc_auth_invalid_credentials": "Incorrect email or password.",
+  "nlc_auth_user_disabled": "This account has been disabled.",
+  "nlc_auth_too_many_attempts": "Too many attempts. Try again in a few minutes.",
+  "nlc_auth_session_expired": "Your session has expired. Please sign in again.",
+  "nlc_auth_not_authorized": "This account is not allowed to use the application.",
+  "nlc_auth_network": "Cannot reach the ERP. Check your Internet connection.",
+  "nlc_auth_configuration": "The application is not linked to the ERP: configuration missing or rejected.",
+  "nlc_auth_unsupported_second_factor": "This account uses a two-step verification the application does not support.",
+  "nlc_auth_unknown": "Something went wrong. Please try again.",
+  "nlc_auth_checking": "Checking your access\u2026",
+  "nlc_2fa_title": "Security check",
+  "nlc_2fa_intro": "To secure your access, enter the verification code sent to:",
+  "nlc_2fa_your_email": "your email address",
+  "nlc_2fa_code_label": "6-digit security code",
+  "nlc_2fa_remember": "Remember this device for {days} days",
+  "@nlc_2fa_remember": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "nlc_2fa_remember_hint": "The code will no longer be asked on this device, and the application will open even offline. Avoid on a shared device.",
+  "nlc_2fa_submit": "Verify and sign in",
+  "nlc_2fa_verifying": "Verifying\u2026",
+  "nlc_2fa_resend": "Resend the security code",
+  "nlc_2fa_resend_in": "Resend the code in {seconds}s",
+  "@nlc_2fa_resend_in": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "nlc_2fa_sending": "Sending the code\u2026",
+  "nlc_2fa_back": "Back to the sign-in screen",
+  "nlc_2fa_invalid_code": "Incorrect verification code.",
+  "nlc_2fa_expired_notice": "This device is no longer remembered ({days} days elapsed). Enter the code received by email to continue.",
+  "@nlc_2fa_expired_notice": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "nlc_2fa_revoked_notice": "This device is no longer remembered: it was revoked or replaced. Enter the code received by email to continue.",
+  "nlc_unreachable_title": "ERP unreachable",
+  "nlc_unreachable_text": "Your session is saved, but access must be verified online. To open the application offline, remember this device when entering the security code.",
+  "nlc_retry": "Retry",
+  "nlc_sign_out": "Sign out",
+  "nlc_config_missing_title": "ERP link not configured",
+  "nlc_config_missing_text": "This build was compiled without config/erp.json. Create it from config/erp.example.json, then rebuild the application.",
+  "nlc_nav_library": "Library",
+  "nlc_nav_device": "Device",
+  "nlc_nav_slots": "Slots",
+  "nlc_mode_label": "Display mode",
+  "nlc_mode_simple": "Simple",
+  "nlc_mode_advanced": "Advanced",
+  "nlc_mode_hint": "Simple: home, read and write. Advanced: all tools.",
+  "nlc_my_company": "My company",
+  "nlc_establishments": "Establishments",
+  "nlc_no_establishment": "No establishment",
+  "nlc_device_none": "No device",
+  "nlc_offline": "Offline",
+  "nlc_menu": "Menu",
+  "nlc_connect_device": "Connect the device",
+  "nlc_device_needed_title": "Connect your ChameleonUltra",
+  "nlc_device_needed_text": "This function needs the reader. Connect it to continue.",
+  "nlc_dash_eyebrow": "Badges workspace",
+  "nlc_dash_title": "Dashboard",
+  "nlc_dash_subtitle": "Appointments and buildings of {issuer}",
+  "@nlc_dash_subtitle": {
+    "placeholders": {
+      "issuer": {
+        "type": "String"
+      }
+    }
+  },
+  "nlc_dash_updated": "Updated at {time}",
+  "@nlc_dash_updated": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "nlc_refresh": "Refresh",
+  "nlc_open_erp": "Open the ERP",
+  "nlc_dash_upcoming": "Upcoming appointments",
+  "nlc_dash_no_upcoming_title": "No appointment planned",
+  "nlc_dash_no_upcoming_text": "Appointments set in the ERP appear here.",
+  "nlc_dash_requests": "Requests to call back",
+  "nlc_dash_stat_upcoming": "Appointments",
+  "nlc_dash_stat_requests": "Pending requests",
+  "nlc_dash_stat_sites": "Buildings",
+  "nlc_dash_stat_badges": "Badges copied",
+  "nlc_dash_today_count": "{count, plural, =0{None today} =1{1 today} other{{count} today}}",
+  "@nlc_dash_today_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nlc_dash_late_count": "{count, plural, =1{1 late} other{{count} late}}",
+  "@nlc_dash_late_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nlc_dash_requests_footer": "awaiting an appointment",
+  "nlc_dash_sites_footer": "{clients} with customers \u00b7 {prospected} prospected",
+  "@nlc_dash_sites_footer": {
+    "placeholders": {
+      "clients": {
+        "type": "int"
+      },
+      "prospected": {
+        "type": "int"
+      }
+    }
+  },
+  "nlc_dash_badges_footer": "{count} this month",
+  "@nlc_dash_badges_footer": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nlc_late": "late",
+  "nlc_today": "Today",
+  "nlc_tomorrow": "Tomorrow",
+  "nlc_date_to_set": "Date to be set",
+  "nlc_badges_count": "{count, plural, =1{1 badge} other{{count} badges}}",
+  "@nlc_badges_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nlc_contacts_count": "{count, plural, =1{1 contact} other{{count} contacts}}",
+  "@nlc_contacts_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nlc_units_count": "{count, plural, =1{1 unit} other{{count} units}}",
+  "@nlc_units_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nlc_no_site": "No building",
+  "nlc_customer": "Customer",
+  "nlc_call": "Call",
+  "nlc_copy_phone": "Copy the phone number",
+  "nlc_phone_copied": "Phone number copied",
+  "nlc_directions": "Directions",
+  "nlc_at_home": "At home",
+  "nlc_more_in_erp": "+ {count} more in the ERP",
+  "@nlc_more_in_erp": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nlc_dash_map": "Buildings map",
+  "nlc_map_fit": "Fit all",
+  "nlc_map_empty": "No building has a position yet. Place them from the ERP.",
+  "nlc_map_ranking": "Buildings",
+  "nlc_map_no_sites": "No building yet",
+  "nlc_map_no_sites_text": "Buildings added in the ERP appear here.",
+  "nlc_site_status_new": "To prospect",
+  "nlc_site_status_prospected": "Prospected",
+  "nlc_site_status_client": "Customers",
+  "nlc_site_status_blocked": "Blocked",
+  "nlc_site_kind_building": "Building",
+  "nlc_site_kind_residence": "Residence",
+  "nlc_site_kind_parking": "Car park",
+  "nlc_site_kind_offices": "Offices",
+  "nlc_site_kind_house": "House",
+  "nlc_site_kind_place": "Passing place",
+  "nlc_site_kind_other": "Other place",
+  "nlc_compat_unknown": "Not tested yet",
+  "nlc_compat_ok": "Copyable",
+  "nlc_compat_partial": "Anti-copy (CUID/FUID required)",
+  "nlc_compat_ko": "Not copyable",
+  "nlc_site_contacts": "Contacts",
+  "nlc_site_in_progress": "{count} in progress",
+  "@nlc_site_in_progress": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nlc_site_copied": "{count} copied",
+  "@nlc_site_copied": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nlc_site_badges": "Badges copied",
+  "nlc_site_calls_brought": "Calls brought",
+  "nlc_site_thanks_to_place": "thanks to this place",
+  "nlc_site_posters": "Posters in place",
+  "nlc_site_access": "Access system",
+  "nlc_site_compat": "Compatibility",
+  "nlc_site_appointments": "Appointments",
+  "nlc_site_no_appointment": "No appointment for this building.",
+  "nlc_site_do_not_prospect": "Do not prospect",
+  "nlc_close": "Close",
+  "nlc_dash_quick": "Quick actions",
+  "nlc_dash_offline_title": "ERP data unavailable",
+  "nlc_dash_offline_text": "The application is open offline: NFC tools remain usable. Appointments and the map will return with the network.",
+  "nlc_dash_error_title": "Could not load the data",
+  "nlc_dash_no_issuer": "No establishment is linked to this account.",
+  "nlc_dash_loading": "Loading the Badges workspace\u2026",
+  "nlc_dash_device_ready": "Reader connected",
+  "nlc_dash_device_missing": "No reader connected",
+  "nlc_dash_device_missing_text": "Connect your ChameleonUltra to read or write a badge.",
+  "nlc_sale_status_request": "Request received",
+  "nlc_sale_status_appointment": "Appointment set",
+  "nlc_sale_status_copied": "Copied",
+  "nlc_sale_status_cancelled": "Cancelled",
+  "nlc_other": "Other",
+  "nlc_settings_account": "Account and security",
+  "nlc_settings_signed_in_as": "Signed in as",
+  "nlc_settings_device_remembered": "This device is remembered: the security code is not asked, and the application opens offline.",
+  "nlc_settings_device_not_remembered": "This device is not remembered: the security code is asked at each launch.",
+  "nlc_settings_forget_device": "Forget this device",
+  "nlc_settings_forget_device_done": "Device forgotten",
+  "nlc_legal_notices": "Legal notices",
+  "nlc_about_license_text": "Free software distributed under the GNU GPL version 3, without any warranty.",
+  "nlc_settings_display": "Display",
+  "nlc_save_to_site": "Save to a building",
+  "nlc_save_to_site_desc": "Link this badge to a building so it can be copied from the field.",
+  "nlc_pick_site": "Choose a building",
+  "nlc_no_sites": "No building yet. Add one in the ERP.",
+  "nlc_dumps_offline": "Connect to the ERP to save a badge to a building.",
+  "nlc_dump_saved": "Badge saved to the building",
+  "nlc_dump_save_failed": "Could not save the badge.",
+  "nlc_stored_dumps": "Saved badges",
+  "nlc_no_stored_dumps": "No badge saved on this building yet.",
+  "nlc_delete_dump": "Delete this badge",
+  "nlc_dump_deleted": "Badge deleted",
+  "nlc_dump_delete_failed": "Could not delete the badge."
 }

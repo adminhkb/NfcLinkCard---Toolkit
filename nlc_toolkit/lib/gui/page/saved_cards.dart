@@ -1,3 +1,5 @@
+import 'package:nlc_toolkit/helpers/interchange_formats.dart';
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -11,6 +13,7 @@ import 'package:nlc_toolkit/helpers/general.dart';
 import 'package:nlc_toolkit/helpers/mifare_classic/general.dart';
 import 'package:nlc_toolkit/helpers/mifare_ultralight/general.dart';
 import 'package:nlc_toolkit/helpers/validators.dart';
+import 'package:nlc_toolkit/gui/page/badge_dumps_ui.dart';
 import 'package:nlc_toolkit/main.dart';
 import 'package:nlc_toolkit/sharedprefsprovider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -47,10 +50,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
     );
   }
 
-  Widget _createMenuButton(
-    ChameleonGUIState appState, {
-    required bool elevated,
-  }) {
+  Widget _createMenuButton(NlcAppState appState, {required bool elevated}) {
     final localizations = AppLocalizations.of(context)!;
     return MenuAnchor(
       menuChildren: [
@@ -94,7 +94,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
   }
 
   Future<void> _editFolder([CardFolder? folder]) async {
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
     final localizations = AppLocalizations.of(context)!;
     final name = TextEditingController(text: folder?.name ?? '');
     var color = folder?.color ?? Colors.deepOrange;
@@ -204,7 +204,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
   Future<String?> _pickFolderDestination({CardFolder? movingFolder}) async {
     final localizations = AppLocalizations.of(context)!;
     final folders = context
-        .read<ChameleonGUIState>()
+        .read<NlcAppState>()
         .sharedPreferencesProvider
         .getCardFolders();
     final excluded = movingFolder == null
@@ -242,7 +242,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
     final destination = await _pickFolderDestination();
     if (destination == null) return;
     if (!mounted) return;
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
     final cards = appState.sharedPreferencesProvider.getCards();
     final index = cards.indexWhere((item) => item.id == card.id);
     if (index >= 0) {
@@ -256,7 +256,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
     final destination = await _pickFolderDestination(movingFolder: folder);
     if (destination == null) return;
     if (!mounted) return;
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
     final folders = appState.sharedPreferencesProvider.getCardFolders();
     final index = folders.indexWhere((item) => item.id == folder.id);
     if (index >= 0) {
@@ -267,7 +267,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
   }
 
   Future<void> _deleteFolder(CardFolder folder) async {
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
     final localizations = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -302,9 +302,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
 
   Future<void> _exportFolder(CardFolder folder) async {
     final localizations = AppLocalizations.of(context)!;
-    final provider = context
-        .read<ChameleonGUIState>()
-        .sharedPreferencesProvider;
+    final provider = context.read<NlcAppState>().sharedPreferencesProvider;
     final folders = provider.getCardFolders();
     final ids = _folderTreeIds(folder.id, folders);
     final bundle = CardFolderBundle(
@@ -345,7 +343,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
     final localizations = AppLocalizations.of(context)!;
     try {
       final bundle = CardFolderBundle.fromJson(source);
-      final appState = context.read<ChameleonGUIState>();
+      final appState = context.read<NlcAppState>();
       final folders = appState.sharedPreferencesProvider.getCardFolders();
       final cards = appState.sharedPreferencesProvider.getCards();
       final idMap = <String, String>{};
@@ -401,7 +399,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
   }
 
   Future<void> _editDictionaryFolder([DictionaryFolder? folder]) async {
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
     final localizations = AppLocalizations.of(context)!;
     final name = TextEditingController(text: folder?.name ?? '');
     var color = folder?.color ?? Colors.deepOrange;
@@ -496,7 +494,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
   }) {
     final localizations = AppLocalizations.of(context)!;
     final folders = context
-        .read<ChameleonGUIState>()
+        .read<NlcAppState>()
         .sharedPreferencesProvider
         .getDictionaryFolders();
     final excluded = movingFolder == null
@@ -533,7 +531,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
   Future<void> _moveDictionary(Dictionary dictionary) async {
     final destination = await _pickDictionaryFolderDestination();
     if (destination == null || !mounted) return;
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
     final dictionaries = appState.sharedPreferencesProvider.getDictionaries();
     final index = dictionaries.indexWhere((item) => item.id == dictionary.id);
     if (index >= 0) {
@@ -550,7 +548,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
       movingFolder: folder,
     );
     if (destination == null || !mounted) return;
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
     final folders = appState.sharedPreferencesProvider.getDictionaryFolders();
     final index = folders.indexWhere((item) => item.id == folder.id);
     if (index >= 0) {
@@ -580,7 +578,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    final appState = context.read<ChameleonGUIState>();
+    final appState = context.read<NlcAppState>();
     final folders = appState.sharedPreferencesProvider.getDictionaryFolders();
     final ids = _dictionaryFolderTreeIds(folder.id, folders);
     appState.sharedPreferencesProvider.setDictionaryFolders(
@@ -597,9 +595,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
 
   Future<void> _exportDictionaryFolder(DictionaryFolder folder) async {
     final localizations = AppLocalizations.of(context)!;
-    final provider = context
-        .read<ChameleonGUIState>()
-        .sharedPreferencesProvider;
+    final provider = context.read<NlcAppState>().sharedPreferencesProvider;
     final folders = provider.getDictionaryFolders();
     final ids = _dictionaryFolderTreeIds(folder.id, folders);
     final bundle = DictionaryFolderBundle(
@@ -621,7 +617,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
     final localizations = AppLocalizations.of(context)!;
     try {
       final bundle = DictionaryFolderBundle.fromJson(source);
-      final appState = context.read<ChameleonGUIState>();
+      final appState = context.read<NlcAppState>();
       final folders = appState.sharedPreferencesProvider.getDictionaryFolders();
       final dictionaries = appState.sharedPreferencesProvider.getDictionaries();
       final idMap = <String, String>{};
@@ -668,7 +664,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
   }
 
   Widget _dictionaryCreateMenuButton(
-    ChameleonGUIState appState, {
+    NlcAppState appState, {
     required bool elevated,
   }) {
     final localizations = AppLocalizations.of(context)!;
@@ -715,7 +711,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<ChameleonGUIState>();
+    var appState = context.watch<NlcAppState>();
     final allDictionaries = appState.sharedPreferencesProvider
         .getDictionaries();
     final allDictionaryFolders = appState.sharedPreferencesProvider
@@ -774,10 +770,8 @@ class SavedCardsPageState extends State<SavedCardsPage> {
     }
 
     return Scaffold(
-      backgroundColor: scheme.surface,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: scheme.surface,
-        surfaceTintColor: Colors.transparent,
         title: Text(localizations.saved_cards),
         leading: _selectedSection == 0
             ? currentFolder == null
@@ -887,8 +881,9 @@ class SavedCardsPageState extends State<SavedCardsPage> {
                                                     // Non-JSON formats are handled below.
                                                   }
                                                   if (decodedJson is Map &&
-                                                      decodedJson['format'] ==
-                                                          'chameleon-ultra-gui-folder') {
+                                                      InterchangeFormat.isCardFolder(
+                                                        decodedJson['format'],
+                                                      )) {
                                                     await _importFolderSource(
                                                       string,
                                                     );
@@ -1683,6 +1678,15 @@ class SavedCardsPageState extends State<SavedCardsPage> {
                                         },
                                         children: [
                                           IconButton(
+                                            tooltip:
+                                                localizations.nlc_save_to_site,
+                                            onPressed: () =>
+                                                saveCardToSite(context, tag),
+                                            icon: const Icon(
+                                              Icons.save_alt_outlined,
+                                            ),
+                                          ),
+                                          IconButton(
                                             tooltip: localizations.move_card,
                                             onPressed: () => _moveCard(tag),
                                             icon: const Icon(
@@ -1886,8 +1890,9 @@ class SavedCardsPageState extends State<SavedCardsPage> {
                                                   // Plain dictionary files are handled below.
                                                 }
                                                 if (decodedJson is Map &&
-                                                    decodedJson['format'] ==
-                                                        'chameleon-ultra-gui-dictionary-folder') {
+                                                    InterchangeFormat.isDictionaryFolder(
+                                                      decodedJson['format'],
+                                                    )) {
                                                   await _importDictionaryFolderSource(
                                                     contents,
                                                   );
@@ -2158,7 +2163,7 @@ class SavedCardsPageState extends State<SavedCardsPage> {
   }
 
   Future<String?> dictMergeDialog(BuildContext context, Dictionary mergeDict) {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     var dicts = appState.sharedPreferencesProvider.getDictionaries();
 
     dicts.sort((a, b) => a.name.compareTo(b.name));
@@ -2320,7 +2325,7 @@ class DictMergeDelegate extends SearchDelegate<String> {
 
   @override
   List<Widget> buildActions(BuildContext context) {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     return [
       IconButton(
         icon: const Icon(Icons.clear),
@@ -2416,7 +2421,7 @@ class DictMergeDelegate extends SearchDelegate<String> {
       itemCount: results.length,
       itemBuilder: (BuildContext context, int index) {
         final dict = results.elementAt(index);
-        var appState = context.read<ChameleonGUIState>();
+        var appState = context.read<NlcAppState>();
         if (dict.id == mergeDict.id) {
           return Container();
         }

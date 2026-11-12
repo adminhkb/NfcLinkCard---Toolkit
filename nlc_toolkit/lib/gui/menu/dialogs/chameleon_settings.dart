@@ -30,7 +30,7 @@ class ChameleonSettingsState extends State<ChameleonSettings> {
   }
 
   Future<DeviceSettings> getSettingsData() async {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     try {
       return await appState.communicator!.getDeviceSettings();
     } catch (_) {
@@ -40,7 +40,7 @@ class ChameleonSettingsState extends State<ChameleonSettings> {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<ChameleonGUIState>();
+    var appState = context.watch<NlcAppState>();
     var localizations = AppLocalizations.of(context)!;
     var scaffoldMessenger = ScaffoldMessenger.of(context);
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();

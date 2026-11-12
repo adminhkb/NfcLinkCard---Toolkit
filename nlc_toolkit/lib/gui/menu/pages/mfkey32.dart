@@ -38,7 +38,7 @@ class Mfkey32MenuState extends State<Mfkey32Menu> {
   }
 
   Future<(bool, int)> getMf1DetectionStatus() async {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
 
     return (
       await appState.communicator!.isMf1DetectionMode(),
@@ -56,7 +56,7 @@ class Mfkey32MenuState extends State<Mfkey32Menu> {
   }
 
   Future<void> handleMfkeyCalculation() async {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
 
     var count = await appState.communicator!.getMf1DetectionCount();
     var detections = await appState.communicator!.getMf1DetectionResult(count);

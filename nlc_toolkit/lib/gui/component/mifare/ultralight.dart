@@ -47,7 +47,7 @@ class CardReaderState extends State<MifareUltralightHelper> {
   bool get isUlc => widget.hfInfo.type == TagType.ultralightC;
 
   Future<void> readUlcCard({bool withKey = true}) async {
-    var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+    var appState = Provider.of<NlcAppState>(context, listen: false);
     var localizations = AppLocalizations.of(context)!;
 
     setState(() {
@@ -126,7 +126,7 @@ class CardReaderState extends State<MifareUltralightHelper> {
   }
 
   Future<void> readCard({bool withPassword = false}) async {
-    var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+    var appState = Provider.of<NlcAppState>(context, listen: false);
     var localizations = AppLocalizations.of(context)!;
     Uint8List? pack;
     setState(() {
@@ -208,7 +208,7 @@ class CardReaderState extends State<MifareUltralightHelper> {
   }
 
   Future<void> saveCard({bool bin = false}) async {
-    var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+    var appState = Provider.of<NlcAppState>(context, listen: false);
 
     List<int> cardDump = [];
     var localizations = AppLocalizations.of(context)!;
@@ -284,7 +284,7 @@ class CardReaderState extends State<MifareUltralightHelper> {
 
   @override
   Widget build(BuildContext context) {
-    var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+    var appState = Provider.of<NlcAppState>(context, listen: false);
     var localizations = AppLocalizations.of(context)!;
 
     return Column(

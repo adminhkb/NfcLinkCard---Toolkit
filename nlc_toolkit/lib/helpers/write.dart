@@ -46,7 +46,7 @@ abstract class AbstractWriteHelper {
 
   static AbstractWriteHelper? getClassByCardType(
       TagType type,
-      ChameleonGUIState appState,
+      NlcAppState appState,
       void Function() update,
       AppLocalizations localizations) {
     if (isMifareClassic(type)) {

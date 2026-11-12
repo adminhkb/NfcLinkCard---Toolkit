@@ -77,7 +77,7 @@ class SlotEditMenuState extends State<SlotEditMenu> {
   }
 
   Future<void> updateInfo() async {
-    var appState = context.watch<ChameleonGUIState>();
+    var appState = context.watch<NlcAppState>();
     if (previousTagType == selectedType ||
         isMifareClassic(previousTagType) && isMifareClassic(selectedType!)) {
       return;
@@ -185,7 +185,7 @@ class SlotEditMenuState extends State<SlotEditMenu> {
   }
 
   Future<void> save() async {
-    var appState = Provider.of<ChameleonGUIState>(context, listen: false);
+    var appState = Provider.of<NlcAppState>(context, listen: false);
 
     await appState.communicator!.activateSlot(widget.slot);
     if (widget.slotType != selectedType) {
@@ -273,7 +273,7 @@ class SlotEditMenuState extends State<SlotEditMenu> {
   @override
   Widget build(BuildContext context) {
     var localizations = AppLocalizations.of(context)!;
-    var appState = context.watch<ChameleonGUIState>();
+    var appState = context.watch<NlcAppState>();
 
     return AlertDialog(
       title: Text(localizations.edit_slot_data),

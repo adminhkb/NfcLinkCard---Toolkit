@@ -11,4 +11,4 @@ PRODUCT_NAME = NLC Toolkit
 PRODUCT_BUNDLE_IDENTIFIER = com.nfclinkcard.nlctoolkit
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2023 Chameleon Development. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2023-2026 NLC Toolkit contributors. GNU GPL v3.

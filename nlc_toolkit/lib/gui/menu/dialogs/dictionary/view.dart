@@ -35,7 +35,7 @@ class DictionaryViewMenuState extends State<DictionaryViewMenu> {
   }
 
   void _refreshDictionaryData() {
-    var appState = context.read<ChameleonGUIState>();
+    var appState = context.read<NlcAppState>();
     var dictionaries = appState.sharedPreferencesProvider.getDictionaries();
     var updatedDictionary = dictionaries.firstWhere(
       (dict) => dict.id == widget.dictionary.id,
@@ -55,7 +55,7 @@ class DictionaryViewMenuState extends State<DictionaryViewMenu> {
   @override
   Widget build(BuildContext context) {
     var localizations = AppLocalizations.of(context)!;
-    var appState = context.watch<ChameleonGUIState>();
+    var appState = context.watch<NlcAppState>();
 
     return AlertDialog(
       title: Text(
