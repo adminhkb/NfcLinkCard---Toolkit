@@ -67,12 +67,15 @@ NLC Toolkit pour Windows (64 bits)
 
 1. Décompressez le dossier entier.
 2. Lancez nlc_toolkit.exe dans ce dossier.
-3. Branchez le ChameleonUltra V2 en USB et choisissez-le dans Connexion.
-4. Si la détection automatique ne le trouve pas, utilisez Connexion manuelle
+3. Connectez-vous avec votre compte ERP (un code de sécurité arrive par e-mail).
+4. Branchez le ChameleonUltra en USB et choisissez-le dans Connexion.
+   Si la détection automatique ne le trouve pas, utilisez Connexion manuelle
    et sélectionnez son port COM.
 
+Bluetooth : activez-le dans Réglages > Connexion, après avoir appairé le
+ChameleonUltra dans les réglages Bluetooth de Windows (un seul mode à la fois).
+
 Gardez les DLL et le dossier data à côté de l'exécutable.
-Cette version Windows utilise l'USB ; le Bluetooth PC n'est pas encore intégré.
 '@ | Set-Content -LiteralPath (Join-Path $bundlePath 'LISEZ-MOI-Windows.txt') -Encoding UTF8
 
 $archivePath = Join-Path $distPath "$bundleName.zip"
