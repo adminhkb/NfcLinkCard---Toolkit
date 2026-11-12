@@ -15,8 +15,10 @@ import 'package:nlc_toolkit/generated/i18n/app_localizations.dart';
 import 'package:nlc_toolkit/gui/design/nlc_theme.dart';
 import 'package:nlc_toolkit/gui/design/nlc_widgets.dart';
 import 'package:nlc_toolkit/gui/page/dashboard_labels.dart';
+import 'package:nlc_toolkit/gui/page/write_card.dart';
 import 'package:nlc_toolkit/helpers/definitions.dart';
 import 'package:nlc_toolkit/helpers/general.dart';
+import 'package:nlc_toolkit/main.dart';
 import 'package:nlc_toolkit/sharedprefsprovider.dart';
 
 /// La fréquence situe la technologie du badge ; l'UID et le CUID ne se distinguent pas d'une
@@ -248,6 +250,33 @@ class _SiteDumpsSectionState extends State<SiteDumpsSection> {
     }
   }
 
+  /// Récupère le dump le temps de l'écrire sur un badge vierge, sans le garder sur l'appareil.
+  Future<void> _copy(BadgeDump dump) async {
+    final l = AppLocalizations.of(context)!;
+    final appState = context.read<NlcAppState>();
+    // Un lecteur connecté est indispensable pour écrire.
+    if (appState.communicator == null ||
+        !(appState.connector?.connected ?? false)) {
+      showNlcToast(context, l.nlc_connect_reader_first, success: false);
+      return;
+    }
+    final repo = context.read<ErpServices>().badgeDumps.repo();
+    if (repo == null) return;
+    showNlcToast(context, l.nlc_copy_fetching);
+    try {
+      final bytes = await repo.fetch(dump);
+      final card = CardSave.fromJson(utf8.decode(bytes));
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => WriteCardPage(initialCard: card)),
+      );
+    } catch (_) {
+      // Échec réseau ou dump illisible : rien n'est écrit, rien n'est gardé.
+      if (mounted)
+        showNlcToast(context, l.nlc_copy_fetch_failed, success: false);
+    }
+  }
+
   Future<void> _delete(BadgeDump dump) async {
     final l = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
@@ -324,16 +353,25 @@ class _SiteDumpsSectionState extends State<SiteDumpsSection> {
           )
         else
           for (final dump in dumps)
-            _DumpRow(dump: dump, onDelete: () => _delete(dump)),
+            _DumpRow(
+              dump: dump,
+              onCopy: () => _copy(dump),
+              onDelete: () => _delete(dump),
+            ),
       ],
     );
   }
 }
 
 class _DumpRow extends StatelessWidget {
-  const _DumpRow({required this.dump, required this.onDelete});
+  const _DumpRow({
+    required this.dump,
+    required this.onCopy,
+    required this.onDelete,
+  });
 
   final BadgeDump dump;
+  final VoidCallback onCopy;
   final VoidCallback onDelete;
 
   @override
@@ -370,6 +408,16 @@ class _DumpRow extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          IconButton(
+            tooltip: l.nlc_copy_to_badge,
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(
+              Icons.contactless_rounded,
+              size: 18,
+              color: Nlc.indigo400,
+            ),
+            onPressed: onCopy,
           ),
           IconButton(
             tooltip: l.nlc_delete_dump,

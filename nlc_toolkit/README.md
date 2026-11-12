@@ -7,10 +7,10 @@ Application Flutter (Windows, Android, iOS, macOS, Linux) pour lire, écrire et 
 - **Connexion avec le compte de l'ERP** : adresse e-mail et mot de passe (Firebase Auth), puis le même code de sécurité par e-mail que sur le site. « Se souvenir de cet appareil pendant 30 jours » évite le code aux ouvertures suivantes et permet d'ouvrir l'application hors connexion.
 - **Mode simple** : accueil avec les prochains rendez-vous, la carte des immeubles et l'état du lecteur, plus la lecture et l'écriture d'un badge.
 - **Mode avancé** : bibliothèque de cartes et de dictionnaires, tableau de bord de l'appareil, emplacements d'émulation, outils (BCC, import MCT, reniflage HF/LF…).
-- **Badges enregistrés** : un badge lu peut être rangé dans Firebase Storage et rattaché à un immeuble (depuis la bibliothèque) ; chaque immeuble affiche ses badges enregistrés. Le fichier n'est pas gardé sur l'appareil.
+- **Badges enregistrés** : un badge lu peut être rangé dans Firebase Storage et rattaché à un immeuble (depuis la bibliothèque) ; chaque immeuble affiche ses badges enregistrés. Le bouton « Copier » récupère le badge le temps de l'écrire sur un badge vierge, sans le garder sur l'appareil.
 - Le reste des données de l'ERP est **lu** (rendez-vous, immeubles, prospection) ; rien d'autre n'y est modifié depuis l'application.
 
-Le Bluetooth n'est pas encore pris en charge sous Windows : brancher le lecteur en USB.
+Sous Windows, le lecteur se connecte en USB par défaut. Le Bluetooth est possible en option (réglage « Connexion Bluetooth ») : appairer d'abord le ChameleonUltra dans les réglages Bluetooth de Windows. Un seul mode à la fois (USB ou Bluetooth).
 
 ## Configuration de la liaison ERP
 

@@ -348,6 +348,19 @@ class SettingsMainPageState extends State<SettingsMainPage> {
             title: l.settings_section_connection,
             icon: Icons.usb_rounded,
             children: [
+              if (Platform.isWindows)
+                _Switch(
+                  title: l.nlc_settings_bluetooth,
+                  subtitle: l.nlc_settings_bluetooth_desc,
+                  value: prefs.getBluetoothDesktop(),
+                  onChanged: (value) {
+                    prefs.setBluetoothDesktop(value);
+                    // Change de transport : on coupe la connexion et on recrée le connecteur.
+                    appState.connector?.performDisconnect();
+                    appState.connector = null;
+                    appState.changesMade();
+                  },
+                ),
               _Switch(
                 title: l.auto_scan_devices,
                 value: prefs.getAutoScanEnabled(),
@@ -596,9 +609,11 @@ class _Switch extends StatelessWidget {
     required this.title,
     required this.value,
     required this.onChanged,
+    this.subtitle,
   });
 
   final String title;
+  final String? subtitle;
   final bool value;
   final ValueChanged<bool> onChanged;
 
@@ -615,6 +630,12 @@ class _Switch extends StatelessWidget {
           fontWeight: FontWeight.w600,
         ),
       ),
+      subtitle: subtitle == null
+          ? null
+          : Text(
+              subtitle!,
+              style: const TextStyle(color: Nlc.slate500, fontSize: 12),
+            ),
       value: value,
       onChanged: onChanged,
     );

@@ -3,13 +3,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nlc_toolkit/erp/auth_controller.dart';
 import 'package:nlc_toolkit/erp/demo/demo_backend.dart';
 import 'package:nlc_toolkit/erp/erp_services.dart';
 import 'package:nlc_toolkit/erp/secret_store.dart';
 import 'package:nlc_toolkit/generated/i18n/app_localizations.dart';
 import 'package:nlc_toolkit/gui/page/badge_dumps_ui.dart';
+import 'package:nlc_toolkit/gui/page/write_card.dart';
 import 'package:nlc_toolkit/helpers/definitions.dart';
+import 'package:nlc_toolkit/main.dart';
 import 'package:nlc_toolkit/sharedprefsprovider.dart';
 
 void main() {
@@ -106,6 +109,48 @@ void main() {
     expect(
       backend.storageObjects.containsKey(saved.value['storagePath']),
       isTrue,
+    );
+  });
+
+  testWidgets('copier sans lecteur : invite à le connecter et n\'écrit rien', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'locale': 'fr',
+      'mct_bundled_dictionaries_seeded_v1': true,
+    });
+    final prefs = SharedPreferencesProvider();
+    await prefs.load();
+    final appState = NlcAppState(prefs); // aucun lecteur : communicator null
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          Provider<ErpServices>.value(value: erp),
+          ChangeNotifierProvider<NlcAppState>.value(value: appState),
+          ChangeNotifierProvider<SharedPreferencesProvider>.value(value: prefs),
+        ],
+        child: MaterialApp(
+          locale: const Locale('fr'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: SiteDumpsSection(siteId: 'siteTilleuls')),
+        ),
+      ),
+    );
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 80));
+    }
+
+    await tester.tap(find.byTooltip('Copier sur un badge').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Connectez d\'abord le lecteur.'), findsOneWidget);
+    expect(
+      find.byType(WriteCardPage),
+      findsNothing,
+      reason: 'sans lecteur, l\'écriture ne démarre pas',
     );
   });
 }

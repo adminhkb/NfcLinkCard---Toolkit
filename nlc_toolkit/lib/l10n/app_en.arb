@@ -1075,5 +1075,11 @@
   "nlc_no_stored_dumps": "No badge saved on this building yet.",
   "nlc_delete_dump": "Delete this badge",
   "nlc_dump_deleted": "Badge deleted",
-  "nlc_dump_delete_failed": "Could not delete the badge."
+  "nlc_dump_delete_failed": "Could not delete the badge.",
+  "nlc_copy_to_badge": "Copy to a badge",
+  "nlc_copy_fetching": "Fetching the badge\u2026",
+  "nlc_copy_fetch_failed": "Could not fetch the badge.",
+  "nlc_connect_reader_first": "Connect the reader first.",
+  "nlc_settings_bluetooth": "Bluetooth connection",
+  "nlc_settings_bluetooth_desc": "Connect to the reader over Bluetooth instead of USB. Pair the ChameleonUltra in Windows settings first."
 }

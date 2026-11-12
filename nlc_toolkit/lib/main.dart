@@ -10,6 +10,7 @@ import 'package:nlc_toolkit/connector/serial_ble.dart';
 import 'package:nlc_toolkit/connector/serial_emulator.dart';
 import 'package:nlc_toolkit/connector/serial_macos.dart';
 import 'package:nlc_toolkit/connector/serial_native.dart';
+import 'package:nlc_toolkit/connector/serial_windows_ble.dart';
 import 'package:nlc_toolkit/erp/auth_controller.dart';
 import 'package:nlc_toolkit/erp/badge_controller.dart';
 import 'package:nlc_toolkit/erp/erp_bootstrap.dart';
@@ -190,6 +191,10 @@ class NlcAppState extends ChangeNotifier {
     if (Platform.isAndroid) return AndroidSerial(log: log!);
     // iOS ne donne accès qu'au Bluetooth.
     if (Platform.isIOS) return BLESerial(log: log!);
+    // Windows : Bluetooth en option (réglage), sinon USB.
+    if (Platform.isWindows && sharedPreferencesProvider.getBluetoothDesktop()) {
+      return WindowsBleSerial(log: log!);
+    }
     return NativeSerial(log: log!);
   }
 

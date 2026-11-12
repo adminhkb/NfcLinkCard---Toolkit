@@ -946,5 +946,11 @@
   "nlc_no_stored_dumps": "Aucun badge enregistr\u00e9 sur cet immeuble.",
   "nlc_delete_dump": "Supprimer ce badge",
   "nlc_dump_deleted": "Badge supprim\u00e9",
-  "nlc_dump_delete_failed": "Impossible de supprimer le badge."
+  "nlc_dump_delete_failed": "Impossible de supprimer le badge.",
+  "nlc_copy_to_badge": "Copier sur un badge",
+  "nlc_copy_fetching": "R\u00e9cup\u00e9ration du badge\u2026",
+  "nlc_copy_fetch_failed": "Impossible de r\u00e9cup\u00e9rer le badge.",
+  "nlc_connect_reader_first": "Connectez d'abord le lecteur.",
+  "nlc_settings_bluetooth": "Connexion Bluetooth",
+  "nlc_settings_bluetooth_desc": "Se connecter au lecteur en Bluetooth plut\u00f4t qu'en USB. Appairez d'abord le ChameleonUltra dans les r\u00e9glages Windows."
 }

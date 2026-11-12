@@ -1,5 +1,6 @@
 import 'package:nlc_toolkit/helpers/interchange_formats.dart';
 import 'package:nlc_toolkit/erp/secret_store.dart' show erpPreferencePrefix;
+
 import 'dart:typed_data';
 import 'dart:convert';
 
@@ -587,6 +588,15 @@ class SharedPreferencesProvider extends ChangeNotifier {
 
   void setEmulatedChameleon(bool value) {
     _sharedPreferences.setBool('emulate_device', value);
+  }
+
+  /// Sur PC (Windows), se connecter au lecteur en Bluetooth plutôt qu'en USB.
+  bool getBluetoothDesktop() {
+    return _sharedPreferences.getBool('bluetooth_desktop') ?? false;
+  }
+
+  void setBluetoothDesktop(bool value) {
+    _sharedPreferences.setBool('bluetooth_desktop', value);
   }
 
   List<Dictionary> getDictionaries({int keyLength = 0}) {

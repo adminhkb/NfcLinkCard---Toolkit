@@ -17,7 +17,11 @@ import 'package:provider/provider.dart';
 import 'package:nlc_toolkit/generated/i18n/app_localizations.dart';
 
 class WriteCardPage extends StatefulWidget {
-  const WriteCardPage({super.key});
+  const WriteCardPage({super.key, this.initialCard});
+
+  /// Carte à écrire fournie d'avance (copie d'un dump rattaché à un immeuble) : la page saute
+  /// le choix dans la bibliothèque et démarre à la détection de la carte magique.
+  final CardSave? initialCard;
 
   @override
   WriteCardPageState createState() => WriteCardPageState();
@@ -32,6 +36,40 @@ class WriteCardPageState extends State<WriteCardPage> {
   CardSave? card;
   AbstractWriteHelper? baseHelper;
   AbstractWriteHelper? helper;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialCard != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadInitialCard());
+    }
+  }
+
+  /// Prépare la page avec la carte fournie, comme une sélection dans la bibliothèque.
+  Future<void> _loadInitialCard() async {
+    final selectedCard = widget.initialCard!;
+    final appState = context.read<NlcAppState>();
+    final localizations = AppLocalizations.of(context)!;
+    setState(() {
+      card = selectedCard;
+      showVanitySak = mfClassicVanitySakVisibleInWrite(
+        selectedCard.tag,
+        selectedCard.data,
+      );
+      vanitySak = mfClassicVanitySakFromUidHex(selectedCard.uid) ?? false;
+      baseHelper = AbstractWriteHelper.getClassByCardType(
+        selectedCard.tag,
+        appState,
+        updateState,
+        localizations,
+      );
+      if (baseHelper != null) helper = baseHelper!.getAvailableMethods()[0];
+      // Les étapes 0 (choix de la carte) sont déjà faites : on passe au choix de la méthode.
+      step = 1;
+    });
+    await helper?.getCardType();
+    if (mounted) setState(() {});
+  }
 
   Future<String?> cardSelectDialog(BuildContext context) {
     var appState = context.read<NlcAppState>();
@@ -296,11 +334,6 @@ class WriteCardPageState extends State<WriteCardPage> {
     }
 
     return widgets;
-  }
-
-  @override
-  void initState() {
-    super.initState();
   }
 
   @override

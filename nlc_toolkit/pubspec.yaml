@@ -56,6 +56,8 @@ dependencies:
   archive: ^4.2.0
   flutter_reactive_ble: ^5.5.0
   # 13.x requires SDK 37; keep SDK 36 until usb_serial supports Gradle 9.
+  # BLE de bureau (Windows) : flutter_reactive_ble ne gère que mobile.
+  universal_ble: ^2.1.0
   permission_handler: ^12.0.3
   protobuf: ^6.0.0
   collection: ^1.19.1
