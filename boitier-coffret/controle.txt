@@ -1,0 +1,10 @@
+Coffret 45.0 x 50.0 x 15.8 mm
+Corps: 45.0 x 50.0 x 15.8 mm, 18.27 cm3, aretes non manifold : 0
+Tiroir: 34.0 x 44.2 x 11.8 mm, 3.95 cm3, aretes non manifold : 0
+Diffuseur: 18.7 x 2.7 x 2.6 mm, 0.13 cm3, aretes non manifold : 0
+Chevauchement Corps / Tiroir : 0.000 mm3
+Chevauchement Corps / Chameleon : 0.000 mm3
+Chevauchement Tiroir / Chameleon : 0.000 mm3
+Chevauchement Corps / Diffuseur : 0.000 mm3
+Chevauchement Corps / Badge : 0.000 mm3
+Plastique entre Chameleon et badge : 1.30 mm (dont 1.0 mm de paroi)
