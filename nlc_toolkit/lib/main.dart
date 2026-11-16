@@ -4,8 +4,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:nlc_toolkit/bridge/chameleon.dart';
+import 'package:nlc_toolkit/bridge/phone_nfc_communicator.dart';
 import 'package:nlc_toolkit/connector/serial_abstract.dart';
 import 'package:nlc_toolkit/connector/serial_android.dart';
+import 'package:nlc_toolkit/connector/serial_phone_nfc.dart';
 import 'package:nlc_toolkit/connector/serial_ble.dart';
 import 'package:nlc_toolkit/connector/serial_emulator.dart';
 import 'package:nlc_toolkit/connector/serial_macos.dart';
@@ -179,6 +181,38 @@ class NlcAppState extends ChangeNotifier {
       return;
     }
     communicator = ChameleonCommunicator(log!, port: port);
+    notifyListeners();
+  }
+
+  /// Vrai quand le lecteur actif est la puce NFC du téléphone (mode natif).
+  bool get isPhoneNfc => connector is PhoneNfcSerial;
+
+  /// Bascule sur le NFC du téléphone et démarre le mode lecteur. Renvoie `false`
+  /// si le téléphone n'a pas de NFC ou refuse de démarrer.
+  Future<bool> connectPhoneNfc() async {
+    ensureServices();
+    if (connector is! PhoneNfcSerial) {
+      await connector?.performDisconnect();
+      connector = PhoneNfcSerial(log: log!);
+      connector!.connectionStateCallback = onConnectorStateChanged;
+    }
+    final ok = await connector!.connectSpecificDevice('phone-nfc');
+    if (ok) {
+      communicator = PhoneNfcCommunicator(log!);
+    }
+    notifyListeners();
+    return ok;
+  }
+
+  /// Revient au lecteur externe (ChameleonUltra) : recrée le connecteur de la
+  /// plateforme et coupe le NFC du téléphone.
+  Future<void> useExternalReader() async {
+    await connector?.performDisconnect();
+    connector = null;
+    communicator = null;
+    _checkedCommunicator = null;
+    _deviceIoCompatibility = null;
+    ensureServices();
     notifyListeners();
   }
 

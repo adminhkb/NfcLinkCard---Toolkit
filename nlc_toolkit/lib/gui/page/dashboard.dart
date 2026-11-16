@@ -13,6 +13,7 @@ import 'package:nlc_toolkit/erp/erp_services.dart';
 import 'package:nlc_toolkit/erp/models.dart';
 import 'package:nlc_toolkit/generated/i18n/app_localizations.dart';
 import 'package:nlc_toolkit/gui/component/simple/inline_device_connect.dart';
+import 'package:nlc_toolkit/gui/component/simple/reader_source_chooser.dart';
 import 'package:nlc_toolkit/gui/component/simple/simple_read_card.dart';
 import 'package:nlc_toolkit/gui/component/simple/simple_write_card.dart';
 import 'package:nlc_toolkit/gui/design/nlc_theme.dart';
@@ -668,7 +669,9 @@ class _DeviceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           NlcSectionTitle(l.nlc_nav_device, icon: Icons.memory_rounded),
-          if (!connected)
+          // Choix du lecteur : ChameleonUltra externe ou NFC du téléphone (Android).
+          if (!appState.advancedMode) const ReaderSourceChooser(),
+          if (!connected && !appState.isPhoneNfc)
             // En mode simple, la connexion se fait dans la carte, sans ouvrir d'onglet.
             (!appState.advancedMode
                 ? const Padding(
@@ -689,9 +692,11 @@ class _DeviceCard extends StatelessWidget {
             Row(
               children: [
                 NlcIconBox(
-                  connector!.connectionType == ConnectionType.ble
-                      ? Icons.bluetooth_rounded
-                      : Icons.usb_rounded,
+                  appState.isPhoneNfc
+                      ? Icons.contactless_rounded
+                      : (connector!.connectionType == ConnectionType.ble
+                          ? Icons.bluetooth_rounded
+                          : Icons.usb_rounded),
                   color: Nlc.emerald400,
                   size: 46,
                 ),
@@ -701,7 +706,12 @@ class _DeviceCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Chameleon ${chameleonDeviceName(connector.device)}',
+                        appState.isPhoneNfc
+                            ? (Localizations.localeOf(context).languageCode ==
+                                    'fr'
+                                ? 'NFC du téléphone'
+                                : 'Phone NFC')
+                            : 'Chameleon ${chameleonDeviceName(connector!.device)}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -711,7 +721,7 @@ class _DeviceCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        connector.portName,
+                        connector!.portName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -730,13 +740,16 @@ class _DeviceCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
+                if (!appState.isPhoneNfc)
+                  OutlinedButton.icon(
+                    onPressed: () => navigation.go(NlcDestination.device),
+                    icon: const Icon(Icons.memory_rounded, size: 18),
+                    label: Text(l.device_dashboard),
+                  ),
                 OutlinedButton.icon(
-                  onPressed: () => navigation.go(NlcDestination.device),
-                  icon: const Icon(Icons.memory_rounded, size: 18),
-                  label: Text(l.device_dashboard),
-                ),
-                OutlinedButton.icon(
-                  onPressed: () => appState.disconnect(manual: true),
+                  onPressed: () => appState.isPhoneNfc
+                      ? appState.useExternalReader()
+                      : appState.disconnect(manual: true),
                   icon: const Icon(Icons.link_off_rounded, size: 18),
                   label: Text(l.disconnect_device),
                 ),

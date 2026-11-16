@@ -385,7 +385,7 @@ class _Legend extends StatelessWidget {
 }
 
 /// Liste des immeubles à côté de la carte, les clients d'abord.
-class SiteList extends StatelessWidget {
+class SiteList extends StatefulWidget {
   const SiteList({
     super.key,
     required this.sites,
@@ -397,8 +397,27 @@ class SiteList extends StatelessWidget {
   final Map<String, SiteSummary> summaries;
   final ValueChanged<String> onSelect;
 
+  /// Hauteur maximale de la liste : au-delà, elle défile avec sa propre barre.
+  static const double maxListHeight = 320;
+
+  @override
+  State<SiteList> createState() => _SiteListState();
+}
+
+class _SiteListState extends State<SiteList> {
+  final _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final sites = widget.sites;
+    final summaries = widget.summaries;
+    final onSelect = widget.onSelect;
     final l = AppLocalizations.of(context)!;
     int badges(BadgeSite s) =>
         s.isPlace ? summaries[s.id]!.broughtBadges : summaries[s.id]!.badges;
@@ -428,71 +447,92 @@ class SiteList extends StatelessWidget {
             text: l.nlc_map_no_sites_text,
           )
         else
-          for (final site in ranked)
-            InkWell(
-              borderRadius: BorderRadius.circular(Nlc.radius),
-              onTap: () => onSelect(site.id),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 9,
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: siteStatusColor(summaries[site.id]!.status),
-                        borderRadius: BorderRadius.circular(
-                          site.isPlace ? 3 : 10,
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: SiteList.maxListHeight,
+            ),
+            child: Scrollbar(
+              controller: _scroll,
+              thumbVisibility: true,
+              child: ListView(
+                controller: _scroll,
+                shrinkWrap: true,
+                padding: const EdgeInsets.only(right: 12),
+                children: [
+                  for (final site in ranked)
+                    InkWell(
+                      borderRadius: BorderRadius.circular(Nlc.radius),
+                      onTap: () => onSelect(site.id),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 9,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: siteStatusColor(
+                                  summaries[site.id]!.status,
+                                ),
+                                borderRadius: BorderRadius.circular(
+                                  site.isPlace ? 3 : 10,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    site.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Nlc.slate100,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    [
+                                      if (site.isPlace) l.nlc_site_kind_place,
+                                      siteStatusLabel(
+                                        l,
+                                        summaries[site.id]!.status,
+                                      ),
+                                      l.nlc_contacts_count(contacts(site)),
+                                    ].join(' · '),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Nlc.slate500,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              l.nlc_badges_count(badges(site)),
+                              style: const TextStyle(
+                                color: Nlc.slate300,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            site.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Nlc.slate100,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            [
-                              if (site.isPlace) l.nlc_site_kind_place,
-                              siteStatusLabel(l, summaries[site.id]!.status),
-                              l.nlc_contacts_count(contacts(site)),
-                            ].join(' · '),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Nlc.slate500,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      l.nlc_badges_count(badges(site)),
-                      style: const TextStyle(
-                        color: Nlc.slate300,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
             ),
+          ),
       ],
     );
   }
