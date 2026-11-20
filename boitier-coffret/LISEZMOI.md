@@ -12,7 +12,7 @@ Encombrement : 45 × 50 × 15,8 mm.
 | `stl/coffret_tiroir.stl` | le tiroir qui reçoit le Chameleon, façade affleurante avec passage USB‑C |
 | `stl/coffret_diffuseur.stl` | la barrette translucide posée au-dessus des 8 LED |
 | `rendus/` | vues du coffret fermé, tiroir ouvert, dessous et coupe |
-| `coffret.blend` | le modèle complet, maquettes du Chameleon et du badge comprises |
+| `coffret.blend` | le modèle complet en mm : collection « A imprimer » et maquettes du Chameleon et du badge (régénéré par `build.py`, les retouches à la main y sont écrasées) |
 | `scripts/` | génération paramétrique (Blender 5.2) |
 | `controle.txt` | contrôles automatiques de la dernière génération |
 

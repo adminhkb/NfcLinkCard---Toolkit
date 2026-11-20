@@ -54,6 +54,8 @@ for ob, name in files.items():
     bpy.ops.wm.stl_export(filepath=os.path.join(STL, name), export_selected_objects=True,
                           ascii_format=False, apply_modifiers=True)
 
+import presentation  # noqa: E402
+presentation.setup()  # apres l'export : couleurs, mm et vue pour l'ouverture dans Blender
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(ROOT, "coffret.blend"))
 with open(os.path.join(ROOT, "controle.txt"), "w", encoding="utf-8") as f:
     f.write("\n".join(lines) + "\n")
